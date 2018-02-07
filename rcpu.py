@@ -1,3 +1,7 @@
+"""
+a cross platform python program that gathers cpu stats
+"""
+
 import time, psutil
 
 time_to_run = 640
