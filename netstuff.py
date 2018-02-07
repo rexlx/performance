@@ -1,3 +1,6 @@
+"""
+a cross platform python program that measures network traffic
+"""
 import psutil as ps
 import rextools as rtk
 import time
