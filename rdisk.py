@@ -1,24 +1,30 @@
 import time, psutil, datetime
 
 time_to_run = 640
-print('Collecting CPU stats for ' + str(time_to_run))
+print('Collecting disk stats for ' + str(time_to_run))
 def one_min():
-    one_min_load = []
+    one_min_read = []
+    one_min_write = []
     count = 0
     while count <= 60:
-        x = psutil.cpu_percent(interval=None, percpu=False)
-        one_min_load.append(x)
+        x = psutil.disk_io_counters(perdisk=False)
+        one_min_read.append(x.read_count)
+        one_min_write.append(x.write_count)
         time.sleep(1)
         count += 1
-    one_min_avg = sum(one_min_load) / len(one_min_load)
-    with open('uptime.plot', 'a') as loadfile:
-        for load in one_min_load:
-            loadfile.write(str(load) + '\n')
-    return one_min_avg
+    read_avg = sum(one_min_load) / len(one_min_read)
+    write_avg = sum(one_min_load) / len(one_min_write)
+    with open('disks.plot', 'a') as loadfile:
+        index = 0
+        while index < len(one_min_read):
+            loadfile.write(one_min_read[index] + '\t'
+                           + one_min_write[index] + '\n')
+            index += 1
+    return read_avg, write_avg
 
 run_time = 0
-outfile = open('uptime.txt', 'a', 1)
-timer = open('runtime.txt', 'a', 1)
+outfile = open('disks.txt', 'a', 1)
+timer = open('disks_runtime.txt', 'a', 1)
 now = datetime.datetime.now()
 hour, minute = str(now.hour), str(now.minute)
 the_time = hour + ':' + minute
