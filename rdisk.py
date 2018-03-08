@@ -12,13 +12,13 @@ def one_min():
         one_min_write.append(x.write_count)
         time.sleep(1)
         count += 1
-    read_avg = sum(one_min_load) / len(one_min_read)
-    write_avg = sum(one_min_load) / len(one_min_write)
+    read_avg = sum(one_min_read) / len(one_min_read)
+    write_avg = sum(one_min_write) / len(one_min_write)
     with open('disks.plot', 'a') as loadfile:
         index = 0
         while index < len(one_min_read):
-            loadfile.write(one_min_read[index] + '\t'
-                           + one_min_write[index] + '\n')
+            loadfile.write(str(one_min_read[index]) + '\t'
+                           + str(one_min_write[index]) + '\n')
             index += 1
     return read_avg, write_avg
 
