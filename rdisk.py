@@ -30,8 +30,11 @@ hour, minute = str(now.hour), str(now.minute)
 the_time = hour + ':' + minute
 timer.write(the_time + '\n')
 while run_time < 640:
-    load = one_min()
-    outfile.write("%.2f" % load + '\n')
+    read_avg, write_avg = one_min()
+    read = format(read_avg, '.2f')
+    write = format(write_avg, '.2f')
+    data = read + '\t' + write
+    outfile.write(data)
     if run_time % 10 == 0:
         update = time_to_run - run_time
         print(str(update) + 'minutes remaining\n')
