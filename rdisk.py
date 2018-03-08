@@ -6,7 +6,7 @@ def one_min():
     one_min_read = []
     one_min_write = []
     count = 0
-    while count <= 2:
+    while count <= 60:
         x = psutil.disk_io_counters(perdisk=False)
         one_min_read.append(x.read_count)
         one_min_write.append(x.write_count)
