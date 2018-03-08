@@ -6,7 +6,7 @@ def one_min():
     one_min_read = []
     one_min_write = []
     count = 0
-    while count <= 60:
+    while count <= 2:
         x = psutil.disk_io_counters(perdisk=False)
         one_min_read.append(x.read_count)
         one_min_write.append(x.write_count)
@@ -17,7 +17,7 @@ def one_min():
     with open('disks.plot', 'a') as loadfile:
         index = 0
         while index < len(one_min_read):
-            loadfile.write(str(one_min_read[index]) + '\t'
+            loadfile.write(str(one_min_read[index]) + ', '
                            + str(one_min_write[index]) + '\n')
             index += 1
     return read_avg, write_avg
@@ -33,7 +33,7 @@ while run_time < 640:
     read_avg, write_avg = one_min()
     read = format(read_avg, '.2f')
     write = format(write_avg, '.2f')
-    data = read + '\t' + write
+    data = read + ', ' + write + '\n'
     outfile.write(data)
     if run_time % 10 == 0:
         update = time_to_run - run_time
