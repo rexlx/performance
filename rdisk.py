@@ -46,21 +46,21 @@ def crunch_data(run_limit):
             byte_data.write(io_plot_data)
         max_r_bytes = rtk.make_readable(max(r_bytes))
         max_w_bytes = rtk.make_readable(max(w_bytes))
-        max_r_action = rtk.make_readable(max(r_count))
-        max_w_action = rtk.make_readable(max(w_count))
+        max_r_action = max(r_count)
+        max_w_action = max(w_count)
         avg_r_bytes = rtk.make_readable(sum(r_bytes) / len(r_bytes))
         avg_w_bytes = rtk.make_readable(sum(w_bytes) / len(w_bytes))
-        avg_r_action = rtk.make_readable(sum(r_count) / len(r_count))
-        avg_w_action = rtk.make_readable(sum(w_count) / len(w_count))
-        print("most bytes read ".ljust(20) + str(max_r_bytes) + '\n' + 
-                "average read ".ljust(20) + str(avg_r_bytes) + '\n' + 
+        avg_r_action = format(sum(r_count) / len(r_count), '.2f')
+        avg_w_action = format(sum(w_count) / len(w_count), '.2f')
+        print("most bytes read ".ljust(20) + str(max_r_bytes) + '\n' +
+                "average read ".ljust(20) + str(avg_r_bytes) + '\n' +
                 "most bytes written ".ljust(20) + str(max_w_bytes) + '\n' +
                 "average write ".ljust(20) + str(avg_w_bytes) + '\n' +
                 "max read operation ".ljust(20) + str(max_r_action) + '\n' +
                 "avg read operation ".ljust(20) + str(avg_r_action) + '\n' +
                 "max write operation ".ljust(20) + str(max_w_action) + '\n' +
                 "avg write operation ".ljust(20) + str(avg_w_action) + '\n')
-        byte_data.close()       
+        byte_data.close()
         io_data.close()
         now = time.time()
         run_time = now - start
