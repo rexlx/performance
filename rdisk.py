@@ -43,7 +43,7 @@ def crunch_data(run_limit):
             io_data.write(io_plot_data)
         for i in range(0, len(r_bytes)):
             byte_plot_data = str(r_bytes[i]) + ', ' + str(w_bytes[i]) + '\n'
-            byte_data.write(io_plot_data)
+            byte_data.write(byte_plot_data)
         max_r_bytes = rtk.make_readable(max(r_bytes))
         max_w_bytes = rtk.make_readable(max(w_bytes))
         max_r_action = max(r_count)
