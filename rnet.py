@@ -1,5 +1,5 @@
 import psutil as ps
-import rextools as rtk
+import regulartools as rtk
 import time
 import os
 
