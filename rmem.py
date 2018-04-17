@@ -1,7 +1,7 @@
 import psutil as ps
 import time, datetime
 
-def one_min():
+def one_min_poll():
     one_min_load = []
     count = 0
     while count <= 60:
@@ -19,6 +19,6 @@ def one_min():
 
 run_time = 0
 while run_time < 640:
-    load = one_min()
+    load = one_min_poll()
     print("max interval for poll period: " + str(load) + '\n')
     run_time += 1
