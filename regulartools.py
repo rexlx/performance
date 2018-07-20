@@ -6,6 +6,35 @@ import random
 import pickle
 import copy
 
+def make_readable(val):
+    """
+    a function that converts bytes via base 2 (binary)
+    instead of base 10 (decimal) to human readable forms
+    """
+    data = int(val)
+    tib = 1024 ** 4
+    gib = 1024 ** 3
+    mib = 1024 ** 2
+    kib = 1024
+    if data >= tib:
+        symbol = ' TB'
+        new_data = data / tib
+    elif data >= gib:
+        symbol = ' GB'
+        new_data = data / gib
+    elif data >= mib:
+        symbol = ' MB'
+        new_data = data / mib
+    elif data >= kib:
+        symbol = ' KB'
+        new_data = data / kib
+    else:
+        symbol = ' B'
+        new_data = data
+    formated_data = "{0:.2f}".format(new_data)
+    converted_data = str(formated_data).ljust(6) + symbol
+    return converted_data
+
 def sec(seconds):
     """
     A python program that converts seconds to
@@ -74,38 +103,6 @@ def greet(msg):
     print('_' * 80 + "\n" + '-' * 80 + "\n")
 
 
-###
-###  bytes to human readable
-###
-
-def make_readable(val):
-    """
-    a function that converts bytes via base 2 (binary)
-    instead of base 10 (decimal) to human readable forms
-    """
-    data = int(val)
-    tib = 1024 ** 4
-    gib = 1024 ** 3
-    mib = 1024 ** 2
-    kib = 1024
-    if data >= tib:
-        symbol = '  TB'
-        new_data = data / tib
-    elif data >= gib:
-        symbol = '  GB'
-        new_data = data / gib
-    elif data >= mib:
-        symbol = '  MB'
-        new_data = data / mib
-    elif data >= kib:
-        symbol = '  kB'
-        new_data = data / kib
-    else:
-        symbol = '  B'
-        new_data = data
-    formated_data = "{0:.2f}".format(new_data)
-    converted_data = str(formated_data) + symbol
-    return converted_data
 
 ##
 ##  unit conversion
