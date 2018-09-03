@@ -64,15 +64,15 @@ def my_poll(rate, os):
     # determine low / high speed for poll period
     if len(speeds) > 0:
         min_speed, max_speed = min(speeds), max(speeds)
-        # dump the data into a csv file where the first column is cpu util
-        # and the second is the current cpu speed
+        # dump data into a csv(,)
+        #epoch, cpu load, frequency(linux only)
         with open(outfile, 'a') as f:
             for i in range(0, len(loads)):
                 f.write(str(times[i]) + ', ' + str(loads[i]) +
                         ', ' + str(speeds[i]) + '\n')
         return cpu_avg, min_speed, max_speed
     else:
-        #only write the per second values into a file
+        # epoch, cpu load
         with open('cpuutil.plot', 'a') as f:
             for i in range(0, len(loads)):
                 f.write(str(times[i]) + ', ' + str(loads[i]) + '\n')

@@ -1,18 +1,17 @@
 """
 A python tool set
 """
-import datetime, socket, platform
 
-###
-###  bytes to human readable
-###
+import random
+import pickle
+import copy
 
 def make_readable(val):
     """
     a function that converts bytes via base 2 (binary)
     instead of base 10 (decimal) to human readable forms
     """
-    data = float(val)
+    data = int(val)
     tib = 1024 ** 4
     gib = 1024 ** 3
     mib = 1024 ** 2
@@ -86,87 +85,215 @@ def sec(seconds):
             continue
         elif s < 60:
             break
-    converted_data = str(year) + "y " + str(week) + "w " + str(day) \
-                     + "d " + str(hour) + "h " + str(mins) + "m " \
-                     + str(s) + "s"
-    return converted_data
+    print(str(seconds) + " seconds  is  " + str(year)
+    + "y " + str(week) + "w " + str(day)
+    + "d " + str(hour) + "h " + str(mins)
+    + "m " + str(s) + "s")
+
+##
+##  greeting banner
+##
+def greet(msg):
+    """
+    creates a simple banner and greeting
+    """
+    message = " Welcome to the " + msg.title()
+    print("\n")
+    print(message.center(80))
+    print('_' * 80 + "\n" + '-' * 80 + "\n")
+
+
 
 ##
 ##  unit conversion
 ##
 
-# conevrt epoch
-def convert_epoch(x):
-    """
-    converts epoch (unix) time to date
-    """
-    converted_data = datetime.datetime.fromtimestamp(x).strftime(
-    '%Y-%m-%d %H:%M:%S')
-    return converted_data
-
-def get_dist():
-    os = platform.system()
-    if os == 'Windows':
-        return os
-    else:
-        dist = platform.linux_distribution()
-        os = ' '.join(e for e in dist)
-        return os
-
-
-# digital conversion
+#-(n)by2(n)by = (n)by-#
+#-by is bytes
 def by2kby(val):
     x = val / 1024
     return x
 
-def b2mb(val):
+def by2mby(val):
     x = val / ( 1024 ** 2 )
     return x
 
-def b2gb(val):
+def by2gby(val):
     x = val / ( 1024 ** 3 )
     return x
 
-def b2tb(val):
+def by2tby(val):
     x = val / ( 1024 ** 4 )
     return x
 
-def tb2b(val):
+def tby2by(val):
     x = val * ( 1024 ** 4 )
     return x
 
-def gb2b(val):
+def gby2by(val):
     x = val * ( 1024 ** 3 )
     return x
 
-def mb2b(val):
+def mby2by(val):
     x = val * ( 1024 ** 2 )
     return x
 
-def kb2b(val):
+def kby2by(val):
     x = val * 1024
     return x
 
-def kb2mb(val):
+def kby2mby(val):
     x = val / 1024
     return x
 
-def kb2gb(val):
+def kby2gby(val):
     x = val / ( 1024 ** 2 )
     return x
 
-def kb2tb(val):
+def kby2tby(val):
     x = val / ( 1024 ** 3 )
     return x
 
-def tb2kb(val):
+def tby2kby(val):
     x = val * ( 1024 ** 3 )
     return x
 
-def gb2kb(val):
+def gby2kby(val):
     x = val * ( 1024 ** 2 )
     return x
 
-def mb2kb(val):
+def mby2kby(val):
     x = val * 1024
     return x
+
+
+##--substitution based encryption
+##
+def decode(data, key):
+
+    ## opens files supplies by function parameter
+    input_file = open(data, 'rb')
+    decoder = open(key, 'rb')
+    active = True
+    ## while active is true
+    while active:
+        try:
+            ## dump data into 'contents' until EOF
+            contents = pickle.load(input_file)
+        except EOFError:
+            ## if EOF, active is false
+            active = False
+    ## same as above but for decoder
+    active = True
+    while active:
+        try:
+            load_key = pickle.load(decoder)
+        except EOFError:
+            active = False
+    ## sets empty list for converting
+    converted_string = []
+    ## for each value in the encrypted data,
+    for ch in contents[:]:
+        ## if the value is in the key,
+        if ch in load_key:
+            ## add the decoded character to converted_string
+            converted_string.append(load_key[ch])
+        else:
+            converted_string.append(ch)
+    clear_text = ''.join(str(e) for e in converted_string)
+    ## print unencrypted results
+    decoded = open('decoded.txt', 'w')
+    decoded.write(clear_text)
+    decoded.close()
+    #print(clear_text)
+    input_file.close()
+    decoder.close()
+
+
+def encode(method, data):
+    """
+    a function that encodes a file with a specified method
+    and creates a converted data file
+    """
+    user_string = []
+    new_string = []
+    encoder = open(method, 'rb')
+    datafile = open('data.dep', 'wb')
+    active = True
+    ## while active is true
+    while active:
+        try:
+            ## dump data into 'contents' until EOF
+            contents = pickle.load(encoder)
+        except EOFError:
+            ## if EOF, active is false
+            active = False
+
+    with open(data) as infile:
+        ## while true, examine each character
+        while True:
+            ## append 'user_string' with each character in file
+            ch = infile.read(1)
+            user_string.append(ch)
+            ## if the character is in the conversion pool
+            if ch in contents:
+                ## convert character
+                new_string.append(contents[ch])
+            else:
+                ## keep character as is, (rare)
+                new_string.append(ch)
+            ## repeat until EOF
+            if not ch:
+                eof = 'true'
+                break
+    pickle.dump(new_string, datafile)
+    datafile.close()
+
+def makekey(method, key):
+    ## oens file to store key in
+    keyfile = open(key, 'wb')
+    methodfile = open(method, 'wb')
+    ## defines some default values
+    key = []
+    working_pool = {}
+    out_key = {}
+    ## character map, gets copied to create character pools
+    all_char = ['a', 'b', 'c', 'd', 'e',
+                'f', 'g', 'h', 'i', 'j',
+                'k', 'l', 'm', 'n', 'o',
+                'p', 'q', 'r', 's', 't',
+                'u', 'v', 'w', 'x', 'y',
+                'z', 'A', 'B', 'C', 'D',
+                'E', 'F', 'G', 'H', 'I',
+                'J', 'K', 'L', 'M', 'N',
+                'O', 'P', 'Q', 'R', 'S',
+                'T', 'U', 'V', 'W', 'X',
+                'Y', 'Z', '0', '1', '2',
+                '3', '4', '5', '6', '7',
+                '8', '9', '!', '@', '#',
+                '$', '%', '^', '&', '*',
+                '+', '-', '_', '=', '~',
+                ' ', '.', ',', ';', '(',
+                ')', '<', '>', '?', ':',
+                '|', '/', '[', ']', '{',
+                '}', '\'', '"', '\t',
+                '\n', '\\']
+    ## above list copied
+    char_copy = copy.deepcopy(all_char)
+    pool = copy.deepcopy(all_char)
+
+    ## for each character in the character map,
+    for char in char_copy[:]:
+        ## pick a random character from pool
+        temp_char = random.choice(pool)
+        ## appends working_pool dictionary
+        ## {'random': 'actual'} EXAMPLE
+        working_pool[temp_char] = char
+        ## appends my_key dictionary, creates key
+        ## {'actual': 'random'} EXAMPLE
+        out_key[char] = temp_char
+        ## remove the random character assigned
+        ## from the pool so it cant be picked twice
+        pool.remove(temp_char)
+        pickle.dump(out_key, keyfile)
+        pickle.dump(working_pool, methodfile)
