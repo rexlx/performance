@@ -1,7 +1,6 @@
 import psutil as ps
 import regulartools as rtk
-import time
-import os
+import time, os, sys
 
 def net_poll(poll_time):
     sys_wide_start = ps.net_io_counters(pernic=False)
@@ -13,7 +12,7 @@ def net_poll(poll_time):
 
 
 def crunch_data():
-    sys_start, by_nic_start, sys_end, by_nic_end  = net_poll(60)
+    sys_start, by_nic_start, sys_end, by_nic_end  = net_poll(5)
     recv_start = sys_start.bytes_recv
     recv_end =  sys_end.bytes_recv
     sent_start = sys_start.bytes_sent
@@ -24,29 +23,22 @@ def crunch_data():
     sent_data = sent_end - sent_start
     total_recv = rtk.make_readable(recv_data)
     total_sent = rtk.make_readable(sent_data)
-    total_r_plot = open('total_recv.plot', 'a', 1)
-    total_s_plot = open('total_sent.plot', 'a', 1)
-    err_in_plot = open('error_in.plot', 'a', 1)
-    err_out_plot = open('error_out.plot', 'a', 1)
-    human_stats = open('netstats.txt', 'w')
-    human_stats.write("Total Sent".ljust(18) + str(total_sent) + '\n'
-                      + "Total Received".ljust(18) + str(total_recv) + '\n'
-                      + "Dropped in/out".ljust(18) + str(error_in) + '/'
-                      + str(error_out) + '\n')
-    human_stats.close()
-    total_r_plot.write(str(recv_data) + '\n')
-    total_r_plot.close()
-    total_s_plot.write(str(sent_data) + '\n')
-    total_s_plot.close()
-    err_in_plot.write(str(error_in) + '\n')
-    err_in_plot.close()
-    err_out_plot.write(str(error_out) + '\n')
-    err_out_plot.close()
+    now = str(time.time())
+    with open('net.plot', 'a') as f:
+        f.write(now + ', ' + str(recv_data)  + ', ' + str(sent_data)  + ', ' +
+                str(error_in)  + ', ' + str(error_out) + '\n')
 
+    msg = "sent/recv: " + str(total_sent) + '/' + str(total_recv) + \
+    '  errors i/o: ' + str(error_in) + ' / ' + str(error_out)
+    sys.stdout.write('%s\r' % msg)
+    sys.stdout.flush()
 
-while True:
-    crunch_data()
-    f = open('netstats.txt')
-    text =f.read()
-    print(text)
-    f.close()
+def main():
+    runtime = 5760
+    c = 0
+    while c < runtime:
+        crunch_data()
+        c += 1
+
+if __name__ == '__main__':
+    main()
