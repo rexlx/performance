@@ -4,6 +4,38 @@ import os
 
 """
 This script shows the total amount read / written to disk since startup
+
+example output:
+
+written:
+dm-1            796.00 KB
+nvme0n1         2.37   GB
+nvme0n1p1       2.37   GB
+sdb1            0.00   B
+sdb             0.00   B
+dm-2            3.31   GB
+dm-0            8.34   GB
+sdc3            11.32  GB
+sdc1            4.50   KB
+sdc             11.32  GB
+sdc2            36.00  KB
+sda1            7.24   MB
+sda             7.24   MB
+
+read:
+dm-1            3.46   MB
+nvme0n1         8.89   GB
+nvme0n1p1       8.89   GB
+sdb1            175.53 MB
+sdb             177.71 MB
+dm-2            607.03 MB
+dm-0            2.00   GB
+sdc3            2.60   GB
+sdc1            4.86   MB
+sdc             2.61   GB
+sdc2            4.42   MB
+sda1            69.86  MB
+sda             72.04  MB
 """
 
 def make_readable(val):
