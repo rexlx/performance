@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import division
-import time, psutil, time, sys, platform
+import time, psutil, sys, platform, os
 
 # runs for eight hours, one poll per second, screen updates every 5 seconds
 #    refresh = 5
@@ -11,17 +11,31 @@ run_time = 5760
 
 def get_dist():
     """
-    this function gets the OS
+    this function gets the os and determines if the machine
+    is real or virtual
     """
-    os = platform.system()
-    if os == 'Windows':
-        return os
+    cpuinfo = '/proc/cpuinfo'
+    poll_type = platform.system()
+    if poll_type == 'Windows':
+        return poll_type
+    # this block tests /proc/cpuinfo for the hypervisor flag
+    elif os.path.isfile(cpuinfo):
+        try:
+            with open(cpuinfo) as f:
+                for line in f:
+                    if 'hypervisor' in line:
+                        poll_type = 'hypervisor'
+                        return poll_type
+        except Exception as e:
+            print('couldnt open /proc/cpuinfo!')
+            sys.exit()
     else:
         dist = platform.linux_distribution()
-        os = ' '.join(e for e in dist)
-        return os
+        poll_type = ' '.join(e for e in dist)
+        return poll_type
 
-def my_poll(rate, os):
+
+def my_poll(rate, poll_type):
     """
     this function gathers the cpu usage and frequency (freq doesnt work on
     windows) once a second per refresh period(rate) and updates the screen
@@ -34,7 +48,7 @@ def my_poll(rate, os):
     speeds = []
     count = 0
     while count < rate:
-        if os == 'Windows':
+        if poll_type == 'Windows' or poll_type == 'hypervisor':
             # mark the time
             now = str(time.time())
             times.append(now)
@@ -81,16 +95,16 @@ def my_poll(rate, os):
 def main(run_time):
     c = 0
     while c < run_time:
-        os = get_dist()
-        if os != 'Windows':
-            load, min_freq, max_freq = my_poll(refresh, os)
+        poll_type = get_dist()
+        if poll_type != 'Windows' and poll_type != 'hypervisor':
+            load, min_freq, max_freq = my_poll(refresh, poll_type)
             data = "average usage: " + str(round(load, 2)) + \
                    " cpu speed min/max: " + str(round(min_freq, 2)) + '/' + \
                    str(round(max_freq, 2))
             sys.stdout.write('%s\r' % data)
             sys.stdout.flush()
         else:
-            load = my_poll(refresh, os)
+            load = my_poll(refresh, poll_type)
             data = format(load, '.2f')
             msg = "percent used:  " + str(data) + ' '
             sys.stdout.write('%s\r' % msg)
