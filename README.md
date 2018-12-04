@@ -26,5 +26,7 @@ error_out.plot, error_in.plot, total_sent.plot, total_recv.plot
 gathers disk stats from each drive on the system. saved as DISKNAME.plot, fields are:
 *unixtime, reads, writes, bytes read, bytes written, read wait, write wait*
 **NOTE** on newer kernels that have added new fields to iostat, this will break. to fix:
+```
 pip uninstall psutil
 pip install git+https://github.com/giampaolo/psutil.git
+```
