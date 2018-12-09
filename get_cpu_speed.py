@@ -1,6 +1,29 @@
 import os, time
 import multiprocessing as mp
 
+"""
+description:
+
+this script opens /proc/cpuinfo and extracts the current mhz as an
+integer. then, after adding a header line, writes the data to a csv.
+currently the runtimme is hardcoded into the poll function and can only
+be mofified there. i plan to add some args for runtime in seconds,
+delimiter type (currently ',') and who knows what else :), the cpu
+speed can only be obtained on bare metal machines (not virtualized),
+and even then, some machines have bios features that may control the
+speed and therefore obscure that information to the OS.
+coughlenovocough.
+
+example:
+
+python get_cpu_speed.py
+
+creates a file 'cpu_speeds.csv' (need and arg for that too)
+
+utime,cpu0,cpu1,cpu2,cpu3
+1544279626.23,2749,3005,2429,2889
+"""
+
 
 def cpu_speeds():
     """
@@ -82,4 +105,4 @@ def poll(runtime):
         length = now - then
         
 if __name__ == "__main__":
-    poll(60)
+    poll(28800)
