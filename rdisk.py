@@ -41,7 +41,7 @@ def io_poll(poll_time):
             filename =  name + '.plot'
             #epoch, reads, writes, bytes read, bytes written, read wait, write w
             with open(filename, 'a', 1) as f:
-                f.write(now + ', ' + str(r_actions) + "," + str(w_actions) +
+                f.write(now + ',' + str(r_actions) + "," + str(w_actions) +
                 "," + str(r_bytes) + "," + str(w_bytes) + "," + str(r_wait) +
                 "," + str(w_wait) + "\n")
         count += 1

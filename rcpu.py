@@ -82,14 +82,14 @@ def my_poll(rate, poll_type):
         #epoch, cpu load, frequency(linux only)
         with open(outfile, 'a') as f:
             for i in range(0, len(loads)):
-                f.write(str(times[i]) + ', ' + str(loads[i]) +
-                        ', ' + str(speeds[i]) + '\n')
+                f.write(str(times[i]) + ',' + str(loads[i]) +
+                        ',' + str(speeds[i]) + '\n')
         return cpu_avg, min_speed, max_speed
     else:
         # epoch, cpu load
         with open('cpuutil.plot', 'a') as f:
             for i in range(0, len(loads)):
-                f.write(str(times[i]) + ', ' + str(loads[i]) + '\n')
+                f.write(str(times[i]) + ',' + str(loads[i]) + '\n')
         return cpu_avg
 
 def main(run_time):
