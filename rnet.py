@@ -116,7 +116,7 @@ def main():
         # if they want a header
         if not noheader:
             with open('net.plot', 'w') as f:
-                f.write('recv,sent,err_in,err_out\n')
+                f.write('utime,recv,sent,err_in,err_out\n')
     except OSError:
         pass
     # initialize uptime
