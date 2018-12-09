@@ -7,9 +7,9 @@ def get_args():
         parser = argparse.ArgumentParser(description=msg)
         # add expected arguments
         parser.add_argument('-s', dest='silent', required=False,
-                            action="store_true")
+                            action="store_true", help="display statistics")
         parser.add_argument('-n', dest='noheader', required=False,
-                            action="store_true")
+                            action="store_true", help="dont write header")
         parser.add_argument('-R', dest='refresh', required=False)
         parser.add_argument('-r', dest='runtime', required=False)
         args = parser.parse_args()
