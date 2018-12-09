@@ -17,8 +17,8 @@ gathers the cpu load and, if you're running linux, frequency. frequency is colle
 
 gathers network stats and writes them to a file ./net.plot with the following structure:
 
-**recv,sent,err_in,err_out
-1544368488.51,308,0,0,0**
+*recv,sent,err_in,err_out
+1544368488.51,308,0,0,0*
 
 
 **3. rdisk.py**
