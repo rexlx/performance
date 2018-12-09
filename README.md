@@ -15,10 +15,11 @@ gathers the cpu load and, if you're running linux, frequency. frequency is colle
 
 **2. rnet.py**
 
-gathers network stats over a specified poll time untill the process is stopped
-creates the following files:
+gathers network stats and writes them to a file ./net.plot with the following structure:
 
-error_out.plot, error_in.plot, total_sent.plot, total_recv.plot
+**recv,sent,err_in,err_out
+1544368488.51,308,0,0,0**
+
 
 **3. rdisk.py**
 
