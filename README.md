@@ -10,7 +10,7 @@ respective csv and can be plotted easily.
 **1. rcpu.py**
 
 gathers the cpu load and, if you're running linux, frequency. frequency is collected as a single value, and is the average of all core speeds. currently configured to write plot data to ./cpuutil.plot as csv(,). fields are:<br/>
-*unixtime, cpu load, frequency(linux only)*
+*unixtime,cpu load,frequency(linux only)*
 
 
 **2. rnet.py**
