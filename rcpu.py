@@ -2,20 +2,42 @@ from __future__ import print_function
 from __future__ import division
 import time, psutil, sys, platform, os, argparse
 
-# runs for eight hours, one poll per second, screen updates every 5 seconds
-#    refresh = 5
-#    run_time = 5760
-# 60 seconds / refresh (5) = 12; it takes one minute to perform 12 refreshes
-refresh = 5
-run_time = 5760
+"""
+description:
+
+this script gathers the cpu stats and average cpu speed for all cores.
+to get the cpu speed you must be on a non-virtualized machine running
+linux. the script will detect the ability to collect the cpu speed.
+writes all data to to a csv named cpuutil.plot
+
+example:
+
+$ python rcpu.py -h
+usage: rcpu.py [-h] [-s] [-n] [-R REFRESH] [-r RUNTIME]
+
+This script records cpu statistics
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -s          dont display statistics to screen
+  -n          dont write header
+  -R REFRESH
+  -r RUNTIME
+
+csv example:
+$ head cpuutil.plot
+utime,load,speed
+1544389258.45,0.0,2489.77775
+"""
 
 def get_args():
     # create parser
-        msg = "This script records network statistics"
+        msg = "This script records cpu statistics"
         parser = argparse.ArgumentParser(description=msg)
         # add expected arguments
         parser.add_argument('-s', dest='silent', required=False,
-                            action="store_true", help="display statistics")
+                            action="store_true", 
+                            help="dont display statistics to screen")
         parser.add_argument('-n', dest='noheader', required=False,
                             action="store_true", help="dont write header")
         parser.add_argument('-R', dest='refresh', required=False)
