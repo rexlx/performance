@@ -1,8 +1,37 @@
 import psutil, time, argparse
 
+"""
+description:
+
+this script records some basic disk stats for each disk on the system
+it will then create a DISK_NAME.plot file for each disk (and partition)
+in the form of a csv.
+
+it may make sense in the future to write one plot file, and dynamically
+label the headers with a disk name, but for people who dont like
+headers, this would pose a problem.
+
+example:
+
+$ python rdisk.py -h
+usage: rdisk.py [-h] [-n] [-r RUNTIME]
+
+This script records disk statistics
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -n          dont write header
+  -r RUNTIME
+
+sample plot file contents:
+
+utime,read,write,rbytes,wbytes,rwait,wwait
+1544479434.33,2460,0,644808704,0,846,0
+"""
+
 def get_args():
     # create parser
-        msg = "This script records cpu statistics"
+        msg = "This script records disk statistics"
         parser = argparse.ArgumentParser(description=msg)
         # add expected arguments
         parser.add_argument('-n', dest='noheader', required=False,
