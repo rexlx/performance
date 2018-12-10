@@ -1,13 +1,41 @@
-import time, psutil, time
-import regulartools as rtk
+import psutil, time, argparse
 
-def io_poll(poll_time):
+def get_args():
+    # create parser
+        msg = "This script records cpu statistics"
+        parser = argparse.ArgumentParser(description=msg)
+        # add expected arguments
+        parser.add_argument('-n', dest='noheader', required=False,
+                            action="store_true", help="dont write header")
+        parser.add_argument('-r', dest='runtime', required=False)
+        args = parser.parse_args()
+        if args.noheader:
+            noheader = True
+        else:
+            noheader = False
+        if args.runtime:
+            runtime = float(args.runtime)
+        else:
+            # default runtime is eight hours
+            runtime = 28800
+        return noheader, runtime
+
+def write_headers():
+    disks = psutil.disk_io_counters(perdisk=True)
+    disk_names = list(disks.keys())
+    for disk in disk_names:
+        filename = disk + '.plot'
+        with open(filename, 'w') as f:
+            f.write('utime,read,write,rbytes,wbytes,rwait,wwait\n')
+
+def io_poll(runtime):
     """
     this function gets the disk stats for all disks on the system
     """
-    count = 0
-    while count <= poll_time:
-        now = str(time.time())
+    start = time.time()
+    uptime = 0
+    while uptime <= runtime:
+        now = time.time()
         # start values
         disk_start = psutil.disk_io_counters(perdisk=True)
         time.sleep(1)
@@ -41,10 +69,14 @@ def io_poll(poll_time):
             filename =  name + '.plot'
             #epoch, reads, writes, bytes read, bytes written, read wait, write w
             with open(filename, 'a', 1) as f:
-                f.write(now + ',' + str(r_actions) + "," + str(w_actions) +
-                "," + str(r_bytes) + "," + str(w_bytes) + "," + str(r_wait) +
-                "," + str(w_wait) + "\n")
-        count += 1
+                f.write(str(now) + ',' + str(r_actions) + "," + str(w_actions)
+                        + "," + str(r_bytes) + "," + str(w_bytes) + "," 
+                        + str(r_wait) + "," + str(w_wait) + "\n")
+            uptime = now - start
 
 if __name__ == '__main__':
-    io_poll(3600)
+    noheader, runtime = get_args()
+    if not noheader:
+        write_headers()
+    io_poll(runtime)
+
