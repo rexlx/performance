@@ -1,13 +1,43 @@
 import psutil as ps
 import time, os, sys, argparse
 
+"""
+description:
+
+this script collects network statistics. it saves the file as csv(,)
+
+todo:
+it would be better if regardless of the refresh rate, it still writes
+per second stats to a file.
+
+example:
+
+$ python rnet.py -h
+usage: rnet.py [-h] [-s] [-n] [-R REFRESH] [-r RUNTIME]
+
+This script records network statistics
+
+optional arguments:
+-h, --help  show this help message and exit
+-s          dont display statistics
+-n          dont write header
+-R REFRESH
+-r RUNTIME
+
+sample csv output:
+
+utime,recv,sent,err_in,err_out
+1544481320.25,186,168,0,0
+"""
+
 def get_args():
     # create parser
         msg = "This script records network statistics"
         parser = argparse.ArgumentParser(description=msg)
         # add expected arguments
         parser.add_argument('-s', dest='silent', required=False,
-                            action="store_true", help="display statistics")
+                            action="store_true",
+                            help="dont display statistics")
         parser.add_argument('-n', dest='noheader', required=False,
                             action="store_true", help="dont write header")
         parser.add_argument('-R', dest='refresh', required=False)
