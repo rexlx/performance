@@ -1,4 +1,4 @@
-import os, time
+import os, time, argparse
 import multiprocessing as mp
 
 """
@@ -6,17 +6,22 @@ description:
 
 this script opens /proc/cpuinfo and extracts the current mhz as an
 integer. then, after adding a header line, writes the data to a csv.
-currently the runtimme is hardcoded into the poll function and can only
-be mofified there. i plan to add some args for runtime in seconds,
-delimiter type (currently ',') and who knows what else :), the cpu
-speed can only be obtained on bare metal machines (not virtualized),
-and even then, some machines have bios features that may control the
-speed and therefore obscure that information to the OS.
+the cpu speed can only be obtained on bare metal machines 
+(not virtualized), and even then, some machines have bios features that
+may control the speed and therefore obscure that information to the OS.
 coughlenovocough.
 
 example:
 
-python get_cpu_speed.py
+python get_cpu_speed.py -h
+usage: get_cpu_speed.py [-h] [-n] [-r RUNTIME]
+
+This script records cpu statistics
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -n          dont write header
+  -r RUNTIME  how long to run in seconds
 
 creates a file 'cpu_speeds.csv' (need and arg for that too)
 
@@ -24,6 +29,26 @@ utime,cpu0,cpu1,cpu2,cpu3
 1544279626.23,2749,3005,2429,2889
 """
 
+def get_args():
+    # create parser
+        msg = "This script records cpu statistics"
+        parser = argparse.ArgumentParser(description=msg)
+        # add expected arguments
+        parser.add_argument('-n', dest='noheader', required=False,
+                            action="store_true", help="dont write header")
+        parser.add_argument('-r', dest='runtime', required=False, 
+                            help="how long to run in seconds")
+        args = parser.parse_args()
+        if args.noheader:
+            noheader = True
+        else:
+            noheader = False
+        if args.runtime:
+            runtime = float(args.runtime)
+        else:
+            # default runtime is eight hours
+            runtime = 28800
+        return noheader, runtime
 
 def cpu_speeds():
     """
@@ -48,7 +73,22 @@ def cpu_speeds():
                 speeds.append(str(speed))
     return utime, speeds
 
-def make_csv(utime, speeds):
+def write_header():
+    # get the total cores (including hyperthreaded ones)
+    total_cores = mp.cpu_count()
+    # list comprehension that concatenates 'cpu' + core number + ','
+    # calculated from the range function 0-total_cores
+    cpus = ['cpu' + str(e) + ',' for e in range(0, total_cores)]
+    # we dont want the last comma
+    cpus[-1] = cpus[-1].rstrip(',')
+    with open('cpu_speeds.csv', 'a') as fname:
+        # write the csv header
+        fname.write('utime,')
+        for i in cpus:
+            fname.write(i)
+        fname.write('\n')
+
+def append_csv(utime, speeds):
     """
     this takes two parameters, utime and speeds, writes data to a csv
     named cpu_speeds.csv. the rows are as follows:
@@ -65,39 +105,34 @@ def make_csv(utime, speeds):
         # finally, add the newline
         f.write('\n')
 
-def poll(runtime):
+def main(noheader, runtime):
     """
-    this function adds the header bar to the csv, gets the cpu speeds, and
-    then writes it to a csv. requires runtime in seconds as parameter
+    this function adds the header bar to the csv, gets the cpu speeds,
+    and then writes it to a csv. takes two arguments as parametes: 
+    noheader -> boolean (dont write a header to the csv)
+    runtime  -> numeric (how long to runfor)
     """
-    # get the total cores (including hyperthreaded ones)
-    total_cores = mp.cpu_count()
     # mark the start time
     then = time.time()
     # initialize length for the while loop below
     length = 0
-    # list comprehension that concatenates 'cpu' + core number + ','
-    # calculated from the range function 0-total_cores
-    cpus = ['cpu' + str(e) + ',' for e in range(0, total_cores)]
-    # we dont want the last comma
-    cpus[-1] = cpus[-1].rstrip(',')
-    # if the csv exists, remove it
+    # we dont want to append an old file and mix results, remove.
     try:
         os.remove('cpu_speeds.csv')
+    # the exception would likely be because of permissions, stop
+    # running things as root!!!!
     except OSError:
+        print('\ncouldnt remove file! check your permissions?')
         pass
-    with open('cpu_speeds.csv', 'a') as fname:
-        # write the csv header
-        fname.write('utime,')
-        for i in cpus:
-            fname.write(i)
-        fname.write('\n')
+    # if the user does not add the -n arg then noheader is False
+    if not noheader:
+        write_header()
     # main loop
     while length <= runtime:
         # unpack the return of cpu_speeds
         utime, speeds = cpu_speeds()
         # feed that into make_csv
-        make_csv(utime, speeds)
+        append_csv(utime, speeds)
         # wait
         time.sleep(1)
         # determine runtime
@@ -105,4 +140,5 @@ def poll(runtime):
         length = now - then
         
 if __name__ == "__main__":
-    poll(28800)
+    noheader, runtime = get_args()
+    main(noheader, runtime)

@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import division
-import time, psutil, sys, platform, os, argparse
+import re, time, psutil, sys, platform, os, argparse
 
 """
 description:
@@ -31,7 +31,7 @@ utime,load,speed
 """
 
 def get_args():
-    # create parser
+    # create an instance of parser from the argparse module
         msg = "This script records cpu statistics"
         parser = argparse.ArgumentParser(description=msg)
         # add expected arguments
@@ -73,16 +73,17 @@ def get_dist():
     poll_type = platform.system()
     if poll_type == 'Windows':
         return poll_type
-    # this block tests /proc/cpuinfo for the hypervisor flag
-    elif poll_type == 'Linux':
-        return poll_type
+    # this block tests /proc/cpuinfo for the hypervisor flag, which
+    # means the system is a VM and wont be able to detect freq
     elif os.path.isfile(cpuinfo):
         try:
             with open(cpuinfo) as f:
-                for line in f:
-                    if 'hypervisor' in line:
-                        poll_type = 'hypervisor'
-                        return poll_type
+                matches = re.findall(r'hypervisor', f.read())
+                if len(matches) > 0:
+                    poll_type = matches[-1]
+                    return poll_type
+                else:
+                    return poll_type
         except Exception as e:
             print('couldnt open /proc/cpuinfo!')
             sys.exit()
