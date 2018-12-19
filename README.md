@@ -38,6 +38,6 @@ shows amount written / read since current boot. does not plot.
 **5. get_cpu_speed**
 
 will collect the current cpu speed (in mhz) for each core (including hyperthreaded ones) once a second for the length of the poll(SECONDS) function. creates a csv named cpu_speeds.csv with the following headers:<br/>
-*unixtime,cpu0,cpu2,cpu3,etc...*
+*unixtime,cpu0,cpu2,cpu3,etc...,avg*
 
 **NOTE** only works on non-virtualized unix based OS'
