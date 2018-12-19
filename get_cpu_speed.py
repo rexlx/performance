@@ -25,8 +25,8 @@ optional arguments:
 
 creates a file 'cpu_speeds.csv' (need and arg for that too)
 
-utime,cpu0,cpu1,cpu2,cpu3
-1544279626.23,2749,3005,2429,2889
+utime,cpu0,cpu1,cpu2,cpu3,(etc...),avg
+1544279626.23,2749,3005,2429,2889,2768
 """
 
 def get_args():
@@ -70,8 +70,9 @@ def cpu_speeds():
                 # to shed the decimals
                 speed = int(float(x[3]))
                 # add it to the list
-                speeds.append(str(speed))
-    return utime, speeds
+                speeds.append(speed)
+                avg = sum(speeds) / len(speeds)
+    return utime, speeds, avg
 
 def write_header():
     # get the total cores (including hyperthreaded ones)
@@ -80,15 +81,16 @@ def write_header():
     # calculated from the range function 0-total_cores
     cpus = ['cpu' + str(e) + ',' for e in range(0, total_cores)]
     # we dont want the last comma
-    cpus[-1] = cpus[-1].rstrip(',')
+    #cpus[-1] = cpus[-1].rstrip(',')
     with open('cpu_speeds.csv', 'a') as fname:
         # write the csv header
         fname.write('utime,')
         for i in cpus:
             fname.write(i)
+        fname.write('avg')
         fname.write('\n')
 
-def append_csv(utime, speeds):
+def append_csv(utime, speeds, avg):
     """
     this takes two parameters, utime and speeds, writes data to a csv
     named cpu_speeds.csv. the rows are as follows:
@@ -98,10 +100,12 @@ def append_csv(utime, speeds):
         # write the unixtime (no newline))
         f.write(str(utime) + ',')
         # write all cpu data except the last one + ,
-        for i in speeds[0:-1]:
+        #for i in speeds[0:-1]:
+        for i in speeds:
             f.write(str(i) + ',')
         # write the final cpu data
-        f.write(speeds[-1])
+        #f.write(speeds[-1])
+        f.write(str(avg))
         # finally, add the newline
         f.write('\n')
 
@@ -130,9 +134,9 @@ def main(noheader, runtime):
     # main loop
     while length <= runtime:
         # unpack the return of cpu_speeds
-        utime, speeds = cpu_speeds()
+        utime, speeds, avg = cpu_speeds()
         # feed that into make_csv
-        append_csv(utime, speeds)
+        append_csv(utime, speeds, avg)
         # wait
         time.sleep(1)
         # determine runtime
