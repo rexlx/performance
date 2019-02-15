@@ -4,12 +4,11 @@ import multiprocessing as mp
 """
 description:
 
-this script opens /proc/cpuinfo and extracts the current mhz as an
-integer. then, after adding a header line, writes the data to a csv.
-the cpu speed can only be obtained on bare metal machines 
-(not virtualized), and even then, some machines have bios features that
-may control the speed and therefore obscure that information to the OS.
-coughlenovocough.
+this script opens /proc/cpuinfo and gets the current mhz as an integer. then,
+after adding a header line, writes the data to a csv. the cpu speed can only be
+obtained on bare metal machines (not virtualized), and even then, some machines
+have bios features that may control the speed and therefore obscure that
+information to the OS.
 
 example:
 
@@ -23,32 +22,39 @@ optional arguments:
   -n          dont write header
   -r RUNTIME  how long to run in seconds
 
-creates a file 'cpu_speeds.csv' (need and arg for that too)
+creates a file 'cpu_speeds.csv'
 
 utime,cpu0,cpu1,cpu2,cpu3,(etc...),avg
 1544279626.23,2749,3005,2429,2889,2768
 """
 
 def get_args():
-    # create parser
-        msg = "This script records cpu statistics"
-        parser = argparse.ArgumentParser(description=msg)
-        # add expected arguments
-        parser.add_argument('-n', dest='noheader', required=False,
-                            action="store_true", help="dont write header")
-        parser.add_argument('-r', dest='runtime', required=False, 
-                            help="how long to run in seconds")
-        args = parser.parse_args()
-        if args.noheader:
-            noheader = True
-        else:
-            noheader = False
-        if args.runtime:
-            runtime = float(args.runtime)
-        else:
-            # default runtime is eight hours
-            runtime = 28800
-        return noheader, runtime
+    """
+    gets the cli args via argparse
+    """
+    # exaplin script purpose if help invoked
+    msg = "This script records per core cpu speeds"
+    # create an instance of argparse
+    parser = argparse.ArgumentParser(description=msg)
+    # add expected arguments
+    parser.add_argument('-n', dest='noheader', required=False,
+                        action="store_true", help="dont write header")
+    parser.add_argument('-r', dest='runtime', required=False,
+                        help="how long to run in seconds")
+    # parse args
+    args = parser.parse_args()
+    # either they want the header or they dont
+    if args.noheader:
+        noheader = True
+    else:
+        noheader = False
+    # if no runtime is specified, use default
+    if args.runtime:
+        runtime = float(args.runtime)
+    else:
+        # default runtime is eight hours
+        runtime = 28800
+    return noheader, runtime
 
 def cpu_speeds():
     """
@@ -80,7 +86,7 @@ def write_header():
     # list comprehension that concatenates 'cpu' + core number + ','
     # calculated from the range function 0-total_cores
     cpus = ['cpu' + str(e) + ',' for e in range(0, total_cores)]
-    # we dont want the last comma
+    # we dont want the last comma--> OLD solution keeping in case who knows
     #cpus[-1] = cpus[-1].rstrip(',')
     with open('cpu_speeds.csv', 'a') as fname:
         # write the csv header
@@ -112,7 +118,7 @@ def append_csv(utime, speeds, avg):
 def main(noheader, runtime):
     """
     this function adds the header bar to the csv, gets the cpu speeds,
-    and then writes it to a csv. takes two arguments as parametes: 
+    and then writes it to a csv. takes two arguments as parametes:
     noheader -> boolean (dont write a header to the csv)
     runtime  -> numeric (how long to runfor)
     """
@@ -123,11 +129,18 @@ def main(noheader, runtime):
     # we dont want to append an old file and mix results, remove.
     try:
         os.remove('cpu_speeds.csv')
-    # the exception would likely be because of permissions, stop
-    # running things as root!!!!
-    except OSError:
-        print('\ncouldnt remove file! check your permissions?')
-        pass
+    # either the file doesnt exist or we have permission problems
+    except Exception as e:
+        err = e.args[0]
+        if err == 2:
+            pass
+        elif err == 13:
+            print('encountered a permission issue, wont continue...\n')
+            return
+        else:
+            print(e)
+            print('continuing...\n')
+            pass
     # if the user does not add the -n arg then noheader is False
     if not noheader:
         write_header()
@@ -142,7 +155,7 @@ def main(noheader, runtime):
         # determine runtime
         now = time.time()
         length = now - then
-        
+
 if __name__ == "__main__":
     noheader, runtime = get_args()
     main(noheader, runtime)
