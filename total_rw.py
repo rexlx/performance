@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from __future__ import division
 import os
+import sys
 
 """
 This script shows the total amount read / written to disk since startup
@@ -38,6 +39,7 @@ sda1            69.86  MB
 sda             72.04  MB
 """
 
+
 def make_readable(val):
     """
     a function that converts bytes to human readable form.
@@ -69,6 +71,7 @@ def make_readable(val):
     converted_data = str(formated_data).ljust(6) + symbol
     return converted_data
 
+
 def get_disks():
     """
     this function gets a list of reported block devices.
@@ -86,6 +89,7 @@ def get_disks():
             # append the list of block devices to be returned
             hard_disks.append(i)
     return hard_disks
+
 
 def get_block_size(hard_drive):
     """
@@ -108,6 +112,7 @@ def get_block_size(hard_drive):
         print('\ncould not open ' + target)
         sys.exit(1)
     return b_size
+
 
 def get_written():
     """

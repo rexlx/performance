@@ -30,38 +30,42 @@ utime,load,speed
 1544389258.45,0.0,2489.77775
 """
 
+
 def get_args():
+    """
+    gets cli args via the argparse module
+    """
+    msg = "This script records cpu statistics"
     # create an instance of parser from the argparse module
-        msg = "This script records cpu statistics"
-        parser = argparse.ArgumentParser(description=msg)
-        # add expected arguments
-        parser.add_argument('-s', dest='silent', required=False,
-                            action="store_true", 
-                            help="dont display statistics to screen")
-        parser.add_argument('-n', dest='noheader', required=False,
-                            action="store_true", help="dont write header")
-        parser.add_argument('-R', dest='refresh', required=False)
-        parser.add_argument('-r', dest='runtime', required=False)
-        args = parser.parse_args()
-        if args.silent:
-            silent = True
-        else:
-            silent = False
-        if args.noheader:
-            noheader = True
-        else:
-            noheader = False
-        if args.refresh:
-            refresh = float(args.refresh)
-        else:
-            # default refresh i s 5 seconds
-            refresh = 5
-        if args.runtime:
-            runtime = float(args.runtime)
-        else:
-            # default runtime is eight hours
-            runtime = 28800
-        return silent, noheader, refresh, runtime
+    parser = argparse.ArgumentParser(description=msg)
+    # add expected arguments
+    parser.add_argument('-s', dest='silent', required=False,
+                        action="store_true",
+                        help="dont display statistics to screen")
+    parser.add_argument('-n', dest='noheader', required=False,
+                        action="store_true", help="dont write header")
+    parser.add_argument('-R', dest='refresh', required=False)
+    parser.add_argument('-r', dest='runtime', required=False)
+    args = parser.parse_args()
+    if args.silent:
+        silent = True
+    else:
+        silent = False
+    if args.noheader:
+        noheader = True
+    else:
+        noheader = False
+    if args.refresh:
+        refresh = float(args.refresh)
+    else:
+        # default refresh i s 5 seconds
+        refresh = 5
+    if args.runtime:
+        runtime = float(args.runtime)
+    else:
+        # default runtime is eight hours
+        runtime = 28800
+    return silent, noheader, refresh, runtime
 
 
 def get_dist():
@@ -69,7 +73,9 @@ def get_dist():
     this function gets the os and determines if the machine
     is real or virtual
     """
+    # the cpuinfo file on linux systems
     cpuinfo = '/proc/cpuinfo'
+    # get the platform
     poll_type = platform.system()
     if poll_type == 'Windows':
         return poll_type
@@ -85,7 +91,7 @@ def get_dist():
                 else:
                     return poll_type
         except Exception as e:
-            print('couldnt open /proc/cpuinfo!')
+            print('couldnt open /proc/cpuinfo!', e)
             sys.exit()
 
 
@@ -102,6 +108,8 @@ def my_poll(refresh, poll_type):
     speeds = []
     count = 0
     while count < refresh:
+        # if the machine isnt linux and real, we cant record the cpu
+        # frequency
         if poll_type == 'Windows' or poll_type == 'hypervisor':
             # mark the time
             now = str(time.time())
@@ -111,6 +119,7 @@ def my_poll(refresh, poll_type):
             # add it to the load list
             loads.append(x)
         else:
+            # we can get all the data
             # mark the time
             now = str(time.time())
             times.append(now)
@@ -133,18 +142,19 @@ def my_poll(refresh, poll_type):
     if len(speeds) > 0:
         min_speed, max_speed = min(speeds), max(speeds)
         # dump data into a csv(,)
-        #epoch, cpu load, frequency(linux only)
+        # unixtime,load,frequency(linux only)
         with open(outfile, 'a') as f:
             for i in range(0, len(loads)):
                 f.write(str(times[i]) + ',' + str(loads[i]) +
                         ',' + str(speeds[i]) + '\n')
         return cpu_avg, min_speed, max_speed
     else:
-        # epoch, cpu load
+        # unixtime,load
         with open('cpuutil.plot', 'a') as f:
             for i in range(0, len(loads)):
                 f.write(str(times[i]) + ',' + str(loads[i]) + '\n')
         return cpu_avg
+
 
 def main(silent, noheader, refresh, runtime):
     poll_type = get_dist()
@@ -162,14 +172,21 @@ def main(silent, noheader, refresh, runtime):
                 with open('cpuutil.plot', 'w') as f:
                     f.write('utime,load\n')
     except OSError:
+        # in this case the file doesnt exist yet, ignore safely
         pass
     while uptime <= runtime:
+        # i could probably test for Linux, but knowing how these things
+        # go, theres some distro out there that breaks this test
         if poll_type != 'Windows' and poll_type != 'hypervisor':
+            # unpack the values from my_poll
             load, min_freq, max_freq = my_poll(refresh, poll_type)
+            # create the display message
             data = "average usage: " + str(round(load, 2)) + \
                    " cpu speed min/max: " + str(round(min_freq, 2)) + '/' + \
                    str(round(max_freq, 2))
             if not silent:
+                # if they dont provide the -s flag, print the values to
+                # same line (overwriting the previous line)
                 sys.stdout.write('%s\r' % data)
                 sys.stdout.flush()
         else:
@@ -181,6 +198,7 @@ def main(silent, noheader, refresh, runtime):
                 sys.stdout.flush()
         now = time.time()
         uptime = now - start
+
 
 if __name__ == '__main__':
     silent, noheader, refresh, runtime = get_args()

@@ -30,38 +30,40 @@ utime,recv,sent,err_in,err_out
 1544481320.25,186,168,0,0
 """
 
+
 def get_args():
     # create parser
-        msg = "This script records network statistics"
-        parser = argparse.ArgumentParser(description=msg)
-        # add expected arguments
-        parser.add_argument('-s', dest='silent', required=False,
-                            action="store_true",
-                            help="dont display statistics")
-        parser.add_argument('-n', dest='noheader', required=False,
-                            action="store_true", help="dont write header")
-        parser.add_argument('-R', dest='refresh', required=False)
-        parser.add_argument('-r', dest='runtime', required=False)
-        args = parser.parse_args()
-        if args.silent:
-            silent = True
-        else:
-            silent = False
-        if args.noheader:
-            noheader = True
-        else:
-            noheader = False
-        if args.refresh:
-            refresh = float(args.refresh)
-        else:
-            # default refresh i s 5 seconds
-            refresh = 5
-        if args.runtime:
-            runtime = float(args.runtime)
-        else:
-            # default runtime is eight hours
-            runtime = 28800
-        return silent, noheader, refresh, runtime
+    msg = "This script records network statistics"
+    parser = argparse.ArgumentParser(description=msg)
+    # add expected arguments
+    parser.add_argument('-s', dest='silent', required=False,
+                        action="store_true",
+                        help="dont display statistics")
+    parser.add_argument('-n', dest='noheader', required=False,
+                        action="store_true", help="dont write header")
+    parser.add_argument('-R', dest='refresh', required=False)
+    parser.add_argument('-r', dest='runtime', required=False)
+    args = parser.parse_args()
+    if args.silent:
+        silent = True
+    else:
+        silent = False
+    if args.noheader:
+        noheader = True
+    else:
+        noheader = False
+    if args.refresh:
+        refresh = float(args.refresh)
+    else:
+        # default refresh i s 5 seconds
+        refresh = 5
+    if args.runtime:
+        runtime = float(args.runtime)
+    else:
+        # default runtime is eight hours
+        runtime = 28800
+    return silent, noheader, refresh, runtime
+
 
 def make_readable(val):
     """
@@ -93,6 +95,7 @@ def make_readable(val):
     converted_data = str(formated_data).ljust(6) + symbol
     return converted_data
 
+
 def net_poll(poll_time):
     """
     get both system wide stats and per nic stats. sleeps for the poll
@@ -109,9 +112,9 @@ def net_poll(poll_time):
 
 def crunch_data(refresh, silent):
     # get the network statistics
-    sys_start, by_nic_start, sys_end, by_nic_end  = net_poll(refresh)
+    sys_start, by_nic_start, sys_end, by_nic_end = net_poll(refresh)
     recv_start = sys_start.bytes_recv
-    recv_end =  sys_end.bytes_recv
+    recv_end = sys_end.bytes_recv
     sent_start = sys_start.bytes_sent
     sent_end = sys_end.bytes_sent
     error_in = sys_end.dropin
@@ -125,14 +128,15 @@ def crunch_data(refresh, silent):
     now = str(time.time())
     # write the data to a csv
     with open('net.plot', 'a') as f:
-        f.write(now + ',' + str(recv_data)  + ',' + str(sent_data)  + ',' +
-                str(error_in)  + ',' + str(error_out) + '\n')
-    # display stats 
+        f.write(now + ',' + str(recv_data) + ',' + str(sent_data) + ',' +
+                str(error_in) + ',' + str(error_out) + '\n')
+    # display stats
     if not silent:
         msg = "sent/recv: " + str(total_sent) + '/' + str(total_recv) + \
-        '  errors i/o: ' + str(error_in) + ' / ' + str(error_out)
+              '  errors i/o: ' + str(error_in) + ' / ' + str(error_out)
         sys.stdout.write('%s\r' % msg)
         sys.stdout.flush()
+
 
 def main():
     # mark the time
@@ -150,13 +154,13 @@ def main():
     except OSError:
         pass
     # initialize uptime
-    uptime =  0
+    uptime = 0
     while uptime <= _runtime:
         crunch_data(refresh, silent)
         now = time.time()
         uptime = now - start
     print('\n')
 
+
 if __name__ == '__main__':
     main()
-

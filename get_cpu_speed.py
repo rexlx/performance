@@ -1,4 +1,6 @@
-import os, time, argparse
+import os
+import time
+import argparse
 import multiprocessing as mp
 
 """
@@ -28,6 +30,7 @@ utime,cpu0,cpu1,cpu2,cpu3,(etc...),avg
 1544279626.23,2749,3005,2429,2889,2768
 """
 
+
 def get_args():
     """
     gets the cli args via argparse
@@ -56,6 +59,7 @@ def get_args():
         runtime = 28800
     return noheader, runtime
 
+
 def cpu_speeds():
     """
     gets the current cpu speed for each processor via /proc/cpuinfo
@@ -80,14 +84,15 @@ def cpu_speeds():
                 avg = sum(speeds) / len(speeds)
     return utime, speeds, avg
 
+
 def write_header():
     # get the total cores (including hyperthreaded ones)
     total_cores = mp.cpu_count()
     # list comprehension that concatenates 'cpu' + core number + ','
     # calculated from the range function 0-total_cores
     cpus = ['cpu' + str(e) + ',' for e in range(0, total_cores)]
-    # we dont want the last comma--> OLD solution keeping in case who knows
-    #cpus[-1] = cpus[-1].rstrip(',')
+    # we dont want the last comma--> OLD solution keeping in case
+    # #cpus[-1] = cpus[-1].rstrip(',')
     with open('cpu_speeds.csv', 'a') as fname:
         # write the csv header
         fname.write('utime,')
@@ -95,6 +100,7 @@ def write_header():
             fname.write(i)
         fname.write('avg')
         fname.write('\n')
+
 
 def append_csv(utime, speeds, avg):
     """
@@ -106,14 +112,15 @@ def append_csv(utime, speeds, avg):
         # write the unixtime (no newline))
         f.write(str(utime) + ',')
         # write all cpu data except the last one + ,
-        #for i in speeds[0:-1]:
+        # #for i in speeds[0:-1]:
         for i in speeds:
             f.write(str(i) + ',')
         # write the final cpu data
-        #f.write(speeds[-1])
+        # #f.write(speeds[-1])
         f.write(str(avg))
         # finally, add the newline
         f.write('\n')
+
 
 def main(noheader, runtime):
     """
@@ -155,6 +162,7 @@ def main(noheader, runtime):
         # determine runtime
         now = time.time()
         length = now - then
+
 
 if __name__ == "__main__":
     noheader, runtime = get_args()
