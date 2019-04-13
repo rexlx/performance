@@ -95,7 +95,7 @@ def get_dist():
             sys.exit()
 
 
-def my_poll(refresh, poll_type):
+def poll_cpu(refresh, poll_type):
     """
     this function gathers the cpu usage and frequency (freq doesnt work on
     windows) once a second per refresh period(rate) and updates the screen
@@ -164,22 +164,22 @@ def main(silent, noheader, refresh, runtime):
         # we dont want to append an old file, remove it
         os.remove('cpuutil.plot')
         # if they want a header
-        if not noheader:
-            if poll_type == 'Linux':
-                with open('cpuutil.plot', 'w') as f:
-                    f.write('utime,load,speed\n')
-            else:
-                with open('cpuutil.plot', 'w') as f:
-                    f.write('utime,load\n')
     except OSError:
         # in this case the file doesnt exist yet, ignore safely
         pass
+    if not noheader:
+        if poll_type == 'Linux':
+            with open('cpuutil.plot', 'w') as f:
+                f.write('utime,load,speed\n')
+        else:
+            with open('cpuutil.plot', 'w') as f:
+                f.write('utime,load\n')
     while uptime <= runtime:
         # i could probably test for Linux, but knowing how these things
         # go, theres some distro out there that breaks this test
         if poll_type != 'Windows' and poll_type != 'hypervisor':
-            # unpack the values from my_poll
-            load, min_freq, max_freq = my_poll(refresh, poll_type)
+            # unpack the values from poll_cpu
+            load, min_freq, max_freq = poll_cpu(refresh, poll_type)
             # create the display message
             data = "average usage: " + str(round(load, 2)) + \
                    " cpu speed min/max: " + str(round(min_freq, 2)) + '/' + \
@@ -190,7 +190,7 @@ def main(silent, noheader, refresh, runtime):
                 sys.stdout.write('%s\r' % data)
                 sys.stdout.flush()
         else:
-            load = my_poll(refresh, poll_type)
+            load = poll_cpu(refresh, poll_type)
             data = format(load, '.2f')
             msg = "percent used:  " + str(data) + ' '
             if not silent:
