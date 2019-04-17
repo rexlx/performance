@@ -42,18 +42,25 @@ def get_args():
     # add expected arguments
     parser.add_argument('-n', dest='noheader', required=False,
                         action="store_true", help="dont write header")
+    parser.add_argument('-a', dest='append', required=False,
+                        action="store_true",
+                        help="dont overwrite previous files")
     parser.add_argument('-r', dest='runtime', required=False)
     args = parser.parse_args()
     if args.noheader:
         noheader = True
     else:
         noheader = False
+    if args.append:
+        append = True
+    else:
+        append = False
     if args.runtime:
         runtime = float(args.runtime)
     else:
         # default runtime is eight hours
         runtime = 28800
-    return noheader, runtime
+    return noheader, runtime, append
 
 
 def write_headers():
@@ -116,7 +123,7 @@ def io_poll(runtime):
 
 
 if __name__ == '__main__':
-    noheader, runtime = get_args()
-    if not noheader:
+    noheader, runtime, append = get_args()
+    if not noheader and not append:
         write_headers()
     io_poll(runtime)
