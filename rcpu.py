@@ -42,10 +42,14 @@ def get_args():
     parser.add_argument('-s', dest='silent', required=False,
                         action="store_true",
                         help="dont display statistics to screen")
+    parser.add_argument('-a', dest='append', required=False,
+                        action="store_true",
+                        help="dont overwrite previous files")
     parser.add_argument('-n', dest='noheader', required=False,
                         action="store_true", help="dont write header")
     parser.add_argument('-R', dest='refresh', required=False)
     parser.add_argument('-r', dest='runtime', required=False)
+    parser.add_argument('-o', dest='outfile', required=False)
     args = parser.parse_args()
     if args.silent:
         silent = True
@@ -55,6 +59,10 @@ def get_args():
         noheader = True
     else:
         noheader = False
+    if args.append:
+        append = True
+    else:
+        append = False
     if args.refresh:
         refresh = float(args.refresh)
     else:
@@ -65,7 +73,36 @@ def get_args():
     else:
         # default runtime is eight hours
         runtime = 28800
-    return silent, noheader, refresh, runtime
+    if args.outfile:
+        outfile = args.outfile
+    else:
+        outfile = 'cpuutil.plot'
+    return silent, noheader, refresh, runtime, append, outfile
+
+
+def handle_file(header, noheader, append, outfile):
+    """
+    handles file removal and headers
+    """
+    # if they want a fresh file
+    if not append:
+        try:
+            # remove the old outfile
+            os.remove(outfile)
+            # if the want a header
+            if not noheader:
+                # give it to them
+                with open(outfile, 'w') as f:
+                    f.write(header)
+        except Exception as e:
+            # exception is likely file doesnt exist
+            print(e, " continuing...\n")
+            # in which case, nothing to remove, write the header if
+            # they want it. other issue would be permissions, in which
+            # case we cant write to the file anyways
+            if not noheader:
+                with open(outfile, 'w') as f:
+                    f.write(header)
 
 
 def get_dist():
@@ -81,6 +118,7 @@ def get_dist():
         return poll_type
     # this block tests /proc/cpuinfo for the hypervisor flag, which
     # means the system is a VM and wont be able to detect freq
+    # this has no control for detecting mac as i have none to test on
     elif os.path.isfile(cpuinfo):
         try:
             with open(cpuinfo) as f:
@@ -95,14 +133,13 @@ def get_dist():
             sys.exit()
 
 
-def poll_cpu(refresh, poll_type):
+def poll_cpu(refresh, poll_type, outfile):
     """
     this function gathers the cpu usage and frequency (freq doesnt work on
     windows) once a second per refresh period(rate) and updates the screen
     once every refresh period. it then writes all per second poll / freq data
     to a csv file.
     """
-    outfile = 'cpuutil.plot'
     times = []
     loads = []
     speeds = []
@@ -150,36 +187,29 @@ def poll_cpu(refresh, poll_type):
         return cpu_avg, min_speed, max_speed
     else:
         # unixtime,load
-        with open('cpuutil.plot', 'a') as f:
+        with open(outfile, 'a') as f:
             for i in range(0, len(loads)):
                 f.write(str(times[i]) + ',' + str(loads[i]) + '\n')
         return cpu_avg
 
 
-def main(silent, noheader, refresh, runtime):
+def main(silent, noheader, refresh, runtime, append, outfile):
     poll_type = get_dist()
     uptime = 0
     start = time.time()
-    try:
-        # we dont want to append an old file, remove it
-        os.remove('cpuutil.plot')
-        # if they want a header
-    except OSError:
-        # in this case the file doesnt exist yet, ignore safely
-        pass
-    if not noheader:
-        if poll_type == 'Linux':
-            with open('cpuutil.plot', 'w') as f:
-                f.write('utime,load,speed\n')
-        else:
-            with open('cpuutil.plot', 'w') as f:
-                f.write('utime,load\n')
+    # headers will differ based on system type, test and adjust
+    if poll_type == 'Linux':
+        header = 'utime,load,speed\n'
+    else:
+        header = 'utime,load\n'
+    # call the handle file function
+    handle_file(header, noheader, append, outfile)
     while uptime <= runtime:
         # i could probably test for Linux, but knowing how these things
         # go, theres some distro out there that breaks this test
         if poll_type != 'Windows' and poll_type != 'hypervisor':
             # unpack the values from poll_cpu
-            load, min_freq, max_freq = poll_cpu(refresh, poll_type)
+            load, min_freq, max_freq = poll_cpu(refresh, poll_type, outfile)
             # create the display message
             data = "average usage: " + str(round(load, 2)) + \
                    " cpu speed min/max: " + str(round(min_freq, 2)) + '/' + \
@@ -190,7 +220,7 @@ def main(silent, noheader, refresh, runtime):
                 sys.stdout.write('%s\r' % data)
                 sys.stdout.flush()
         else:
-            load = poll_cpu(refresh, poll_type)
+            load = poll_cpu(refresh, poll_type, outfile)
             data = format(load, '.2f')
             msg = "percent used:  " + str(data) + ' '
             if not silent:
@@ -201,6 +231,6 @@ def main(silent, noheader, refresh, runtime):
 
 
 if __name__ == '__main__':
-    silent, noheader, refresh, runtime = get_args()
-    main(silent, noheader, refresh, runtime)
+    silent, noheader, refresh, runtime, append, outfile = get_args()
+    main(silent, noheader, refresh, runtime, append, outfile)
     print('\n')
