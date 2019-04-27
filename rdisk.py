@@ -1,6 +1,7 @@
 import psutil
 import time
 import argparse
+import os
 
 """
 description:
@@ -63,22 +64,50 @@ def get_args():
     return noheader, runtime, append
 
 
-def write_headers():
+def handle_file(noheader, append, outfile):
     """
-    write the column names to our csv
+    will remove or append the file as instructed
     """
-    disks = psutil.disk_io_counters(perdisk=True)
-    disk_names = list(disks.keys())
-    for disk in disk_names:
-        filename = disk + '.plot'
-        with open(filename, 'w') as f:
-            f.write('utime,read,write,rbytes,wbytes,rwait,wwait\n')
+    header = 'utime,read,write,rbytes,wbytes,rwait,wwait\n'
+    # if they want a new file (default)
+    if not append:
+        # try and remove it
+        try:
+            os.remove(outfile)
+            # if they want a header
+            if not noheader:
+                # give it to them
+                with open(outfile, 'w') as f:
+                    f.write(header)
+        # exception is likely file does not exist
+        except Exception as e:
+            # this isnt an exception we care about, continue
+            print(e, " continuing...\n")
+            if not noheader:
+                with open(outfile, 'w') as f:
+                    f.write(header)
+    # otherwise keep the file as is and write new data to it
+    else:
+        print('appending ', outfile)
 
 
-def io_poll(runtime):
+def get_disk_names():
+    """
+    return a list of the disk names on the system
+    """
+    disk_start = psutil.disk_io_counters(perdisk=True)
+    disk_names = list(disk_start.keys())
+    return disk_names
+
+
+def io_poll(noheader, append, runtime):
     """
     this function gets the disk stats for all disks on the system
     """
+    names = get_disk_names()
+    for name in names:
+        outfile = name + '.plot'
+        handle_file(noheader, append, outfile)
     start = time.time()
     uptime = 0
     while uptime <= runtime:
@@ -88,9 +117,7 @@ def io_poll(runtime):
         time.sleep(1)
         # end values
         disk_end = psutil.disk_io_counters(perdisk=True)
-        # disk names are the keys of these dictionaries
-        disk_names = list(disk_start.keys())
-        for name in disk_names:
+        for name in names:
             # get the start / end values for that disk
             dstart = disk_start[name]
             dend = disk_end[name]
@@ -113,9 +140,9 @@ def io_poll(runtime):
             w_wait = w_wait_end - w_wait_start
             w_bytes = w_bytes_end - w_bytes_start
             # file name is disk name plus .plot
-            filename = name + '.plot'
             # utime,reads,writes,bytes read,bytes written,read wait,write wait
-            with open(filename, 'a', 1) as f:
+            outfile = name + '.plot'
+            with open(outfile, 'a', 1) as f:
                 f.write(str(now) + ',' + str(r_actions) + "," + str(w_actions)
                         + "," + str(r_bytes) + "," + str(w_bytes) + ","
                         + str(r_wait) + "," + str(w_wait) + "\n")
@@ -124,6 +151,4 @@ def io_poll(runtime):
 
 if __name__ == '__main__':
     noheader, runtime, append = get_args()
-    if not noheader and not append:
-        write_headers()
-    io_poll(runtime)
+    io_poll(noheader, append, runtime)
