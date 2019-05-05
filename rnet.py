@@ -38,11 +38,15 @@ def get_args():
     # add expected arguments
     parser.add_argument('-s', dest='silent', required=False,
                         action="store_true",
-                        help="dont display statistics")
+                        help="dont display statistics to screen")
+    parser.add_argument('-a', dest='append', required=False,
+                        action="store_true",
+                        help="dont overwrite previous files")
     parser.add_argument('-n', dest='noheader', required=False,
                         action="store_true", help="dont write header")
     parser.add_argument('-R', dest='refresh', required=False)
     parser.add_argument('-r', dest='runtime', required=False)
+    parser.add_argument('-o', dest='outfile', required=False)
     args = parser.parse_args()
     if args.silent:
         silent = True
@@ -52,6 +56,10 @@ def get_args():
         noheader = True
     else:
         noheader = False
+    if args.append:
+        append = True
+    else:
+        append = False
     if args.refresh:
         refresh = float(args.refresh)
     else:
@@ -62,7 +70,36 @@ def get_args():
     else:
         # default runtime is eight hours
         runtime = 28800
-    return silent, noheader, refresh, runtime
+    if args.outfile:
+        outfile = args.outfile
+    else:
+        outfile = 'net.plot'
+    return silent, noheader, refresh, runtime, append, outfile
+
+
+def handle_file(header, noheader, append, outfile):
+    """
+    handles file removal and headers
+    """
+    # if they want a fresh file
+    if not append:
+        try:
+            # remove the old outfile
+            os.remove(outfile)
+            # if the want a header
+            if not noheader:
+                # give it to them
+                with open(outfile, 'w') as f:
+                    f.write(header)
+        except Exception as e:
+            # exception is likely file doesnt exist
+            print(e, " continuing...\n")
+            # in which case, nothing to remove, write the header if
+            # they want it. other issue would be permissions, in which
+            # case we cant write to the file anyways
+            if not noheader:
+                with open(outfile, 'w') as f:
+                    f.write(header)
 
 
 def make_readable(val):
@@ -110,7 +147,7 @@ def net_poll(poll_time):
     return sys_wide_start, per_nic_start, sys_wide_end, per_nic_end
 
 
-def crunch_data(refresh, silent):
+def crunch_data(refresh, silent, outfile):
     # get the network statistics
     sys_start, by_nic_start, sys_end, by_nic_end = net_poll(refresh)
     recv_start = sys_start.bytes_recv
@@ -127,7 +164,7 @@ def crunch_data(refresh, silent):
     # get the time
     now = str(time.time())
     # write the data to a csv
-    with open('net.plot', 'a') as f:
+    with open(outfile, 'a') as f:
         f.write(now + ',' + str(recv_data) + ',' + str(sent_data) + ',' +
                 str(error_in) + ',' + str(error_out) + '\n')
     # display stats
@@ -139,24 +176,17 @@ def crunch_data(refresh, silent):
 
 
 def main():
+    header = 'utime,recv,sent,err_in,err_out\n'
     # mark the time
     start = time.time()
     # get the args
-    silent, noheader, refresh, runtime = get_args()
+    silent, noheader, refresh, runtime, append, outfile = get_args()
     _runtime = runtime
-    try:
-        # we dont want to append an old file, remove it
-        os.remove('net.plot')
-        # if they want a header
-        if not noheader:
-            with open('net.plot', 'w') as f:
-                f.write('utime,recv,sent,err_in,err_out\n')
-    except OSError:
-        pass
+    handle_file(header, noheader, append, outfile)
     # initialize uptime
     uptime = 0
     while uptime <= _runtime:
-        crunch_data(refresh, silent)
+        crunch_data(refresh, silent, outfile)
         now = time.time()
         uptime = now - start
     print('\n')
