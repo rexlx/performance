@@ -29,13 +29,18 @@ gathers disk stats from each drive on the system. saved as DISKNAME.plot, fields
 pip uninstall psutil
 pip install git+https://github.com/giampaolo/psutil.git
 ```
-**4. total_rw.py**
+
+**4. rmem.py *linux only***
+gathers memory and swap stats<br/>
+*utime,total,used,free,buff,cache,slab,swap*<br/>
+
+**5. total_rw.py**
 
 shows amount written / read since current boot. does not plot.
 
 
 
-**5. get_cpu_speed**
+**6. get_cpu_speed**
 
 will collect the current cpu speed (in mhz) for each core (including hyperthreaded ones) once a second for the length of the poll(SECONDS) function. creates a csv named cpu_speeds.csv with the following headers:<br/>
 *unixtime,cpu0,cpu2,cpu3,etc...,avg*
