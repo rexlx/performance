@@ -30,7 +30,8 @@ pip uninstall psutil
 pip install git+https://github.com/giampaolo/psutil.git
 ```
 
-**4. rmem.py *linux only***
+**4. rmem.py *linux only***<br/>
+
 gathers memory and swap stats<br/>
 *utime,total,used,free,buff,cache,slab,swap*<br/>
 
