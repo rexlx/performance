@@ -1,6 +1,10 @@
 # performance
 A collection of performance gathering tools
 
+You'll notice ive split this into two categories, python and golang.
+golang currently has limited support (only rcpu is ready), rmem will
+come next (mostly done). The rest of the readme only covers python (golang will get its owns)
+
 These tools rely on python and psutil. If you plan to plot the data,
 matplotlib should work fine. All data is currently written to a
 respective csv and can be plotted easily.
