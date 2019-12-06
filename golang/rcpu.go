@@ -190,7 +190,8 @@ func poll_cpu() map[string]Usage {
 			numFields := len(f)
 			for i := 1; i < numFields; i++ {
 				// these are the fields we consider idle
-				if i == 4 || i == 5 {
+				if i == 4 {
+					// if i == 4 || i == 5 {
 					val, err := strconv.Atoi(f[i])
 					check(err)
 					// we want to add these to idle AND total or the
