@@ -1,6 +1,8 @@
 package main
 
 import (
+	// "os/user"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /*
@@ -52,6 +57,7 @@ optional arguments:
   -R          refresh rate, how long to wait between polls
   -r          runtime in seconds, or inf
   -o          outfile, file to write stats to
+  -d          send output to database (monogodb is supported)
 `
 
 // here we pasre the users args, return the args in a map
@@ -66,6 +72,7 @@ func parseArgs() (map[string]string, error) {
 	argMap["refresh"] = "5"
 	argMap["runtime"] = "inf"
 	argMap["outfile"] = "cpuutil.csv"
+	argMap["db"] = "false"
 
 	// call args
 	args := os.Args
@@ -90,6 +97,8 @@ func parseArgs() (map[string]string, error) {
 			argMap["refresh"] = args[i+2]
 		} else if a == "-r" {
 			argMap["runtime"] = args[i+2]
+		} else if a == "-d" {
+			argMap["db"] = args[i+2]
 		} else {
 			// otherwise we got an unexpected arg
 			fmt.Println(help_msg)
@@ -102,7 +111,7 @@ func parseArgs() (map[string]string, error) {
 
 // this logs errors encountered in runtime
 func cpuLog(msg interface{}) error {
-	file, err := os.OpenFile("rmem.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("rcpu.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalln("Failed to open log file", file, ":", err)
 		return nil
@@ -163,6 +172,40 @@ func writeFile(args map[string]string, line string) error {
 	// write the cpu load line and close
 	file.WriteString(line)
 	file.Close()
+	return nil
+}
+
+func send2db(args map[string]string, line string) error {
+	type Stat struct {
+		Time  string
+		Stats []string
+	}
+	entry := Stat{strings.Split(line, ",")[0], strings.Split(line, ",")[1:]}
+	name, name_err := os.Hostname()
+	if name_err != nil {
+		return name_err
+	}
+	clientOptions := options.Client().ApplyURI(args["db"])
+	// ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	// defer cancel()
+	// err = client.Connect(ctx)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		return err
+	}
+	collection := client.Database("cpu_stats").Collection(name)
+	res, res_err := collection.InsertOne(context.TODO(), entry)
+	if res_err != nil {
+		return res_err
+	}
+	log_err := cpuLog(fmt.Sprintf("inserted %v", res))
+	if log_err != nil {
+		return log_err
+	}
+	err = client.Disconnect(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
 
@@ -294,7 +337,7 @@ func main() {
 		}
 		// here we convert is into a string in csv flavor
 		line = strings.Join(lines[:], ",")
-		line += "\n"
+		// line += "\n"
 		if args["silent"] == "false" {
 			// if they want to see usage during runtime, give them
 			// everything but the unixtime in the first position
@@ -308,8 +351,14 @@ func main() {
 			}
 		}
 		// this tool in its current state ALWAYS creates a record
-		write_err := writeFile(args, line)
-		check(write_err)
+		if args["db"] != "false" {
+			err := send2db(args, line)
+			check(err)
+		} else {
+			line += "\n"
+			write_err := writeFile(args, line)
+			check(write_err)
+		}
 	}
 	// exit gracefully
 	fmt.Println()
