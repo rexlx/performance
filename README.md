@@ -9,8 +9,15 @@ These tools rely on python and psutil. If you plan to plot the data,
 matplotlib should work fine. All data is currently written to a
 respective csv and can be plotted easily.
 
+# Golang
+<br>
+**1. rcpu**
+collects cpu stats and can either write them to stdout while recording them to a csv or sending them a mongodb instance.
 
+**2. rmem**
+coming soon
 
+# Python
 **1. rcpu.py**
 
 gathers the cpu load and, if you're running linux, frequency. frequency is collected as a single value, and is the average of all core speeds. currently configured to write plot data to ./cpuutil.plot as csv(,). fields are:<br/>
