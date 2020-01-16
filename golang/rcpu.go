@@ -45,8 +45,6 @@ optional arguments:
   -h          show this help message and exit
   -s          dont display statistics to screen
   -a          dont overwrite previous files
-  -c          converts data to human readable
-  -C          get the current usage in human readabale form
   -R          refresh rate, how long to wait between polls
   -r          runtime in seconds, or inf
   -o          outfile, file to write stats to
