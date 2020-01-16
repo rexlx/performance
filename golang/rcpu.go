@@ -29,13 +29,6 @@ DB support would be nice, considering mongo since i hate schemas.
 likewise probably want to be able to send this data over api
 */
 
-// error checker
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 // create our usage type
 type Usage struct {
 	total, idle int
@@ -140,6 +133,18 @@ func cpuLog(msg interface{}) error {
 	return nil
 }
 
+// error checker
+func check(e error) {
+	if e != nil {
+		err := cpuLog(e)
+		if err != nil {
+			fmt.Println("error logging to cpuLog")
+		}
+		fmt.Println("encountered an error, check rcpu.log for details")
+		os.Exit(1)
+	}
+}
+
 // keep or whack the file as per cli args (or absence of)
 func handleFile(header string, args map[string]string) error {
 	// if we dont want to append (default in absense of the arg)
@@ -191,6 +196,7 @@ func send2db(args map[string]string, line string) error {
 	// err = client.Connect(ctx)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
+		fmt.Println("failed here")
 		return err
 	}
 	collection := client.Database("cpu_stats").Collection(name)
@@ -309,6 +315,7 @@ func main() {
 			fmt.Printf("%7v", v)
 		}
 	}
+	var retry int
 	// main loop starts here
 	for i := time.Now(); time.Since(i) < time.Second*time.Duration(duration); {
 		// probably could have init these up top
@@ -353,7 +360,25 @@ func main() {
 		// this tool in its current state ALWAYS creates a record
 		if args["db"] != "false" {
 			err := send2db(args, line)
-			check(err)
+			if err != nil {
+				if retry >= 10 {
+					exit_msg := "ran out of retries when connected to the DB, exiting..."
+					fmt.Println(exit_msg)
+					exit_err := cpuLog(exit_msg)
+					check(exit_err)
+					os.Exit(1)
+				}
+				err := cpuLog(err)
+				check(err)
+				time.Sleep(30 * time.Second)
+				retry += 1
+				info := fmt.Sprintf("encountered an error when connecting to the DB, waiting 30s and trying again (attempt %v/10)", retry)
+				fmt.Println(info)
+				e := cpuLog(info)
+				check(e)
+				continue
+			}
+			retry = 0
 		} else {
 			line += "\n"
 			write_err := writeFile(args, line)
