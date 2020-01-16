@@ -2,7 +2,7 @@
 A collection of performance gathering tools written in golang and python
 
 You'll notice ive split this into two categories, python and golang.
-golang currently has limited support (only rcpu is ready), rnet will
+golang currently has limited support (only rcpu and rmem are ready), rnet will
 come next. The readme is split up into golng tools and then python tools.
 
 # Golang
