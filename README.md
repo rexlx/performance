@@ -15,6 +15,17 @@ respective csv and can be plotted easily.
 <br>
 collects cpu stats and can either write them to stdout while recording them to a csv or sending them to a mongodb instance.
 
+
+run without displaying to stdout refreshing every 5s forever
+```bash
+rcpu -r inf -R 5 -d "mongodb://192.168.1.42:9091" -s
+```
+
+display stats to screen while writing to csv, run for eight hours
+```bash
+rcpu -r 28800 -R 5
+```
+
 **2. rmem**
 <br>
 coming soon
