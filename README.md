@@ -26,6 +26,10 @@ rcpu -r 28800 -R 5
 <br>
 functions nearly identical to rcpu
 
+**2. rdisk**
+<br>
+functions nearly identical to rcpu
+
 # Python
 **1. rcpu.py**
 
