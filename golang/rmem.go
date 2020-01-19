@@ -26,13 +26,13 @@ This script records memory statistics
 
 optional arguments:
   -h          show this help message and exit
-  -s          dont display statistics to screen
-  -a          dont overwrite previous files
+  -a          dont overwrite previous csv file
   -c          converts data to human readable
   -C          get the current usage in human readabale form
   -R          refresh rate, how long to wait between polls
   -r          runtime in seconds, or inf
   -o          outfile, file to write stats to
+  -l          logfile, specify log path
   -d          send output to database (monogodb is supported)
 `
 
@@ -48,6 +48,7 @@ func parseArgs() (map[string]string, error) {
 	argMap["refresh"] = "5"
 	argMap["runtime"] = "inf"
 	argMap["outfile"] = "memutil.csv"
+	argMap["logfile"] = "rmem.log"
 	argMap["db"] = "false"
 	// call args
 	args := os.Args
@@ -59,6 +60,7 @@ func parseArgs() (map[string]string, error) {
 			continue
 		} else if a == "-h" {
 			fmt.Println(help_msg)
+            os.Exit(0)
 		} else if a == "-s" {
 			argMap["silent"] = "true"
 		} else if a == "-a" {
@@ -76,6 +78,8 @@ func parseArgs() (map[string]string, error) {
 			argMap["runtime"] = args[i+2]
 		} else if a == "-d" {
 			argMap["db"] = args[i+2]
+		} else if a == "-l" {
+			argMap["logfile"] = args[i+2]
 		} else {
 			// otherwise we got an unexpected arg
 			fmt.Println(help_msg)
@@ -87,8 +91,8 @@ func parseArgs() (map[string]string, error) {
 }
 
 // this logs errors encountered in runtime and logs heap usage
-func memLog(msg interface{}) error {
-	file, err := os.OpenFile("rmem.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+func memLog(msg interface{}, logfile string) error {
+	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalln("Failed to open log file", file, ":", err)
 		return nil
@@ -117,9 +121,9 @@ func memLog(msg interface{}) error {
 }
 
 // error checker
-func check(e error) {
+func check(e error, logfile string) {
 	if e != nil {
-		err := memLog(e)
+		err := memLog(e, logfile)
 		if err != nil {
 			fmt.Println("error logging to memLog")
 		}
@@ -169,7 +173,7 @@ func convertBytes(data int) (string, error) {
 }
 
 // does the opposite of above
-func convertToBytes(data string) (float64, error) {
+func convertToBytes(data string, logfile string) (float64, error) {
 	var new_int float64
 	kib := math.Pow(1024, 1)
 	mib := math.Pow(1024, 2)
@@ -178,35 +182,38 @@ func convertToBytes(data string) (float64, error) {
 	if strings.HasSuffix(data, "TB") {
 		// data should be coming in as 666MB (for example), shave off the last 2 chars
 		converted_data, err := strconv.Atoi(data[0 : len(data)-2])
-		check(err)
+		check(err, logfile)
 		new_int = float64(converted_data) * tib
 	} else if strings.HasSuffix(data, "GB") {
 		converted_data, err := strconv.Atoi(data[0 : len(data)-2])
-		check(err)
+		check(err, logfile)
 		new_int = float64(converted_data) * gib
 	} else if strings.HasSuffix(data, "MB") {
 		converted_data, err := strconv.Atoi(data[0 : len(data)-2])
-		check(err)
+		check(err, logfile)
 		new_int = float64(converted_data) * mib
 		// fmt.Println(converted_data)
 	} else if strings.HasSuffix(data, "KB") {
 		converted_data, err := strconv.Atoi(data[0 : len(data)-2])
-		check(err)
+		check(err, logfile)
 		new_int = float64(converted_data) * kib
 	} else if strings.HasSuffix(data, "B") {
 		converted_data, err := strconv.Atoi(data[0 : len(data)-2])
-		check(err)
+		check(err, logfile)
 		new_int = float64(converted_data)
 	} else {
 		e := errors.New("expected data to end with: B, KB, MB, GB, TB")
-		err := memLog(e)
-		check(err)
+		err := memLog(e, logfile)
+		check(err, logfile)
 		return 0.0, e
 	}
 	return new_int, nil
 }
 
 func handleFile(header string, args map[string]string) error {
+	if args["db"] != "false" {
+		return nil
+	}
 	if args["append"] == "false" {
 		err := os.Remove(args["outfile"])
 		if err != nil {
@@ -235,16 +242,16 @@ func writeFile(args map[string]string, line string) error {
 	return nil
 }
 
-func getMem(args map[string]string) (string, error) {
+func getMem(args map[string]string, logfile string) (string, error) {
 	memMap := make(map[string]int)
 	// memMap["el"] = 5
 	fh, err := os.Open("/proc/meminfo")
-	check(err)
+	check(err, logfile)
 	contents := bufio.NewScanner(fh)
 	for contents.Scan() {
 		line := strings.Fields(contents.Text())
 		val, err := strconv.Atoi(line[1])
-		check(err)
+		check(err, logfile)
 		memMap[line[0]] = val * 1024
 	}
 	fh.Close()
@@ -256,11 +263,11 @@ func getMem(args map[string]string) (string, error) {
 			return message, nil
 		} else {
 			free, err := convertBytes(memMap["MemFree:"])
-			check(err)
+			check(err, logfile)
 			used, err := convertBytes(_used_)
-			check(err)
+			check(err, logfile)
 			swap, err := convertBytes(_swap_)
-			check(err)
+			check(err, logfile)
 			message := fmt.Sprintf("free: %v\nused: %v\nswap: %v\n", free, used, swap)
 			return message, nil
 
@@ -278,25 +285,25 @@ func getMem(args map[string]string) (string, error) {
 		return message, nil
 	} else {
 		total, err := convertBytes(memMap["MemTotal:"])
-		check(err)
+		check(err, logfile)
 		free, err := convertBytes(memMap["MemFree:"])
-		check(err)
+		check(err, logfile)
 		buff, err := convertBytes(memMap["Buffers:"])
-		check(err)
+		check(err, logfile)
 		cache, err := convertBytes(memMap["Cached:"])
-		check(err)
+		check(err, logfile)
 		slab, err := convertBytes(memMap["Slab:"])
-		check(err)
+		check(err, logfile)
 		used, err := convertBytes(_used_)
-		check(err)
+		check(err, logfile)
 		swap, err := convertBytes(_swap_)
-		check(err)
+		check(err, logfile)
 		message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v\n", time.Now().Unix(), total, free, buff, cache, slab, used, swap)
 		return message, nil
 	}
 }
 
-func metrics(quit chan bool) {
+func metrics(quit chan bool, logfile string) {
 	for {
 		select {
 		case <-quit:
@@ -304,14 +311,14 @@ func metrics(quit chan bool) {
 			var m runtime.MemStats
 			runtime.ReadMemStats(&m)
 			util := fmt.Sprintf("\nAlloc = %v\nTotalAlloc = %v\nSys = %v\nNumGC = %v\nHeap objects = %v\n", m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC, m.Mallocs)
-			err := memLog(util)
-			check(err)
+			err := memLog(util, logfile)
+			check(err, logfile)
 			time.Sleep(time.Second * 60)
 		}
 	}
 }
 
-func send2db(args map[string]string, line string) error {
+func send2db(args map[string]string, line string, logfile string) error {
 	type Stat struct {
 		Time  string
 		Total string
@@ -334,7 +341,7 @@ func send2db(args map[string]string, line string) error {
 		stats[7],
 	}
 	name, name_err := os.Hostname()
-	check(name_err)
+	check(name_err, logfile)
 	clientOptions := options.Client().ApplyURI(args["db"])
 	// ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	// defer cancel()
@@ -349,7 +356,7 @@ func send2db(args map[string]string, line string) error {
 	if res_err != nil {
 		return res_err
 	}
-	log_err := memLog(fmt.Sprintf("inserted %v", res))
+	log_err := memLog(fmt.Sprintf("inserted %v", res), args["logfile"])
 	if log_err != nil {
 		return log_err
 	}
@@ -363,22 +370,23 @@ func send2db(args map[string]string, line string) error {
 
 func main() {
 	args, parse_err := parseArgs()
-	check(parse_err)
+	logfile := args["logfile"]
+	check(parse_err, logfile)
 	if args["current"] == "true" {
-		mem, err := getMem(args)
-		check(err)
+		mem, err := getMem(args, logfile)
+		check(err, logfile)
 		fmt.Println(mem)
 		os.Exit(0)
 	}
 	quit := make(chan bool)
-	go metrics(quit)
+	go metrics(quit, logfile)
 	var duration float64
 	var err error
 	header := "utime,total,used,free,buff,cache,slab,swap\n"
 	handle_err := handleFile(header, args)
-	check(handle_err)
+	check(handle_err, logfile)
 	refresh, err := strconv.Atoi(args["refresh"])
-	check(err)
+	check(err, logfile)
 	if args["runtime"] == "inf" {
 		dur := &duration
 		// *dur = math.Inf(1)
@@ -386,37 +394,37 @@ func main() {
 	} else {
 		dur := &duration
 		*dur, err = strconv.ParseFloat(args["runtime"], 64)
-		check(err)
+		check(err, logfile)
 	}
 	var retry int
 	for i := time.Now(); time.Since(i) < time.Second*time.Duration(duration); {
-		mem, err := getMem(args)
-		check(err)
+		mem, err := getMem(args, logfile)
+		check(err, logfile)
 		if args["db"] != "false" {
-			err := send2db(args, mem)
+			err := send2db(args, mem, logfile)
 			if err != nil {
 				if retry >= 10 {
 					exit_msg := "ran out of retries when connected to the DB, exiting..."
 					fmt.Println(exit_msg)
-					exit_err := memLog(exit_msg)
-					check(exit_err)
+					exit_err := memLog(exit_msg, args["logfile"])
+					check(exit_err, logfile)
 					os.Exit(1)
 				}
-				err := memLog(err)
-				check(err)
+				err := memLog(err, logfile)
+				check(err, logfile)
 				time.Sleep(30 * time.Second)
 				retry += 1
 				info := fmt.Sprintf("encountered an error when connecting to the DB, waiting 30s and trying again (attempt %v/10)", retry)
 				fmt.Println(info)
-				e := memLog(info)
-				check(e)
+				e := memLog(info, args["logfile"])
+				check(e, logfile)
 				continue
 			}
 			retry = 0
 		} else {
 			mem += "\n"
 			write_err := writeFile(args, mem)
-			check(write_err)
+			check(write_err, logfile)
 		}
 		time.Sleep(time.Duration(refresh) * time.Second)
 	}

@@ -76,6 +76,7 @@ optional arguments:
   -a          dont overwrite previous files
   -R          refresh rate, how long to wait between polls
   -r          runtime in seconds, or inf
+  -l          logfile, specify log path
   -d          send output to database (monogodb is supported)
 `
 
@@ -88,6 +89,7 @@ func parseArgs() (map[string]string, error) {
 	argMap["refresh"] = "5"
 	argMap["runtime"] = "inf"
 	argMap["db"] = "false"
+	argMap["logfile"] = "rdisk.log"
 
 	// call args
 	args := os.Args
@@ -114,6 +116,8 @@ func parseArgs() (map[string]string, error) {
 			argMap["runtime"] = args[i+2]
 		} else if a == "-d" {
 			argMap["db"] = args[i+2]
+		} else if a == "-l" {
+			argMap["logfile"] = args[i+2]
 		} else {
 			// otherwise we got an unexpected arg
 			fmt.Println(help_msg)
@@ -125,8 +129,8 @@ func parseArgs() (map[string]string, error) {
 }
 
 // this logs errors encountered in runtime
-func diskLog(msg interface{}) error {
-	file, err := os.OpenFile("rdisk.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+func diskLog(msg interface{}, logfile string) error {
+	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalln("Failed to open log file", file, ":", err)
 		return nil
@@ -156,9 +160,9 @@ func diskLog(msg interface{}) error {
 }
 
 // error checker
-func check(e error) {
+func check(e error, logfile string) {
 	if e != nil {
-		err := diskLog(e)
+		err := diskLog(e, logfile)
 		if err != nil {
 			fmt.Println("error logging to diskLog")
 		}
@@ -169,6 +173,9 @@ func check(e error) {
 
 // keep or whack the file as per cli args (or absence of)
 func handleFile(header string, args map[string]string, filename string) error {
+	if args["db"] != "false" {
+		return nil
+	}
 	// if we dont want to append (default in absense of the arg)
 	if args["append"] == "false" {
 		// the we want to try and remove it. if we cant, thats okay,
@@ -223,7 +230,7 @@ func send2db(args map[string]string, entry map[string]Stat) error {
 	if res_err != nil {
 		return res_err
 	}
-	log_err := diskLog(fmt.Sprintf("inserted %v", res))
+	log_err := diskLog(fmt.Sprintf("inserted %v", res), args["logfile"])
 	if log_err != nil {
 		return log_err
 	}
@@ -234,11 +241,11 @@ func send2db(args map[string]string, entry map[string]Stat) error {
 	return nil
 }
 
-func poll_disks() map[string]Stat {
+func poll_disks(logfile string) map[string]Stat {
 	// init our usage type
 	usage := make(map[string]Stat)
 	contents, err := ioutil.ReadFile("/proc/diskstats")
-	check(err)
+	check(err, logfile)
 	// make array split by new line
 	lines := strings.Split(string(contents), "\n")
 	for _, line := range lines {
@@ -248,27 +255,27 @@ func poll_disks() map[string]Stat {
 			continue
 		}
 		Rsuccess, err = strconv.Atoi(f[3])
-		check(err)
+		check(err, logfile)
 		Rmerged, err = strconv.Atoi(f[4])
-		check(err)
+		check(err, logfile)
 		SectorRead, err = strconv.Atoi(f[5])
-		check(err)
+		check(err, logfile)
 		Rtime, err = strconv.Atoi(f[6])
-		check(err)
+		check(err, logfile)
 		Wcomplete, err = strconv.Atoi(f[7])
-		check(err)
+		check(err, logfile)
 		Wmerged, err = strconv.Atoi(f[8])
-		check(err)
+		check(err, logfile)
 		SectorWritten, err = strconv.Atoi(f[9])
-		check(err)
+		check(err, logfile)
 		Wtime, err = strconv.Atoi(f[10])
-		check(err)
+		check(err, logfile)
 		IOinProg, err = strconv.Atoi(f[11])
-		check(err)
+		check(err, logfile)
 		IOtime, err = strconv.Atoi(f[12])
-		check(err)
+		check(err, logfile)
 		WeightedTimeIO, err = strconv.Atoi(f[13])
-		check(err)
+		check(err, logfile)
 		entry = Stat{
 			string(f[2]),
 			0.0,
@@ -295,10 +302,11 @@ func main() {
 	// for now we parse args in a sep func, it may make sense to do it
 	// down here in main eventually
 	args, parse_err := parseArgs()
-	check(parse_err)
+	logfile := args["logfile"]
+	check(parse_err, logfile)
 	// we call getCPUSample because we want to build a header and have
 	// no idea how many cpus there are
-	usage0 := poll_disks()
+	usage0 := poll_disks(logfile)
 	keys := make([]string, 0, len(usage0))
 	// hash tables are also unordered which can be a pain for
 	// what we're doing, sort the keys so we iter over the same way
@@ -316,7 +324,7 @@ func main() {
 	// overwrite or append the csv accordingly, pass it the header
 	// we need to know how often to poll the file
 	refresh, err := strconv.Atoi(args["refresh"])
-	check(err)
+	check(err, logfile)
 	// go didnt have the kind of inf object i was hoping for, if
 	// runtime is inf, its actually 1 billion seconds
 	if args["runtime"] == "inf" {
@@ -326,7 +334,7 @@ func main() {
 		// otherwise its what the user supplied
 		dur := &duration
 		*dur, err = strconv.ParseFloat(args["runtime"], 64)
-		check(err)
+		check(err, logfile)
 	}
 	// print the header line if we are providing stdout data
 	// if args["silent"] == "false" {
@@ -346,11 +354,11 @@ func main() {
 		// unix time is our first field in each line
 		lines = append(lines, now)
 		// get our beginning poll
-		usage0 = poll_disks()
+		usage0 = poll_disks(logfile)
 		// wait for the desired refresh time
 		time.Sleep(time.Duration(refresh) * time.Second)
 		// get our ending poll
-		usage1 := poll_disks()
+		usage1 := poll_disks(logfile)
 		// we iter over the keys to ensure correct ordering
 		for _, k := range keys {
 			// this is how we calculate the usage
@@ -390,30 +398,30 @@ func main() {
 				if retry >= 10 {
 					exit_msg := "ran out of retries when connected to the DB, exiting..."
 					fmt.Println(exit_msg)
-					exit_err := diskLog(exit_msg)
-					check(exit_err)
+					exit_err := diskLog(exit_msg, logfile)
+					check(exit_err, logfile)
 					os.Exit(1)
 				}
-				err := diskLog(err)
-				check(err)
+				err := diskLog(err, logfile)
+				check(err, logfile)
 				time.Sleep(30 * time.Second)
 				retry += 1
 				info := fmt.Sprintf("encountered an error when connecting to the DB, waiting 30s and trying again (attempt %v/10)", retry)
 				fmt.Println(info)
-				e := diskLog(info)
-				check(e)
+				e := diskLog(info, logfile)
+				check(e, logfile)
 				continue
 			}
 			retry = 0
 		} else {
 			for k, v := range results {
 				handle_err := handleFile(header, args, k)
-				check(handle_err)
+				check(handle_err, logfile)
 				line = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
 					v.Time, v.Rsuccess, v.Rmerged, v.SectorRead, v.Rtime, v.Wcomplete, v.Wmerged,
 					v.SectorWritten, v.Wtime, v.IOinProg, v.IOtime, v.WeightedTimeIO)
 				err := writeFile(args, line, k)
-				check(err)
+				check(err, logfile)
 			}
 			// write_err := writeFile(args, line)
 			// check(write_err)
