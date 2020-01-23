@@ -1,6 +1,7 @@
 package main
 
 import (
+
 	// "os/user"
 	"context"
 	"errors"
@@ -20,19 +21,31 @@ import (
 /*
 GIFTS FROM THE GOOD IDEA FAIRY
 
-It may be nice to add a feature that, upon completion, crunches the
-data and gives some generic info: min, max, mean, std... etc
 
-considering adding colored threshholds when outputting to screen
-
-DB support would be nice, considering mongo since i hate schemas.
-likewise probably want to be able to send this data over api
 */
 
 // create our usage type
 type Usage struct {
 	total, idle int
 }
+
+type Stat struct {
+	Time  int64
+	Stats []float64
+}
+
+var (
+	duration float64
+	err      error
+	util     float64
+	idle     int
+	total    int
+	retry    int
+	data     []string
+	line     string
+	now      int64
+	entry    Stat
+)
 
 // this is the help message we output when -h is passed or a bad flag is given
 var help_msg string = `
@@ -185,33 +198,25 @@ func writeFile(args map[string]string, line string) error {
 	return nil
 }
 
-func send2db(args map[string]string, line string) error {
-	type Stat struct {
-		Time  string
-		Stats []string
-	}
-	entry := Stat{strings.Split(line, ",")[0], strings.Split(line, ",")[1:]}
-	name, name_err := os.Hostname()
-	if name_err != nil {
-		return name_err
+func send2db(args map[string]string, stat Stat) error {
+	name, err := os.Hostname()
+	if err != nil {
+		return err
 	}
 	clientOptions := options.Client().ApplyURI(args["db"])
-	// ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	// defer cancel()
-	// err = client.Connect(ctx)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		fmt.Println("failed here")
 		return err
 	}
 	collection := client.Database("cpu_stats").Collection(name)
-	res, res_err := collection.InsertOne(context.TODO(), entry)
-	if res_err != nil {
-		return res_err
+	res, err := collection.InsertOne(context.TODO(), stat)
+	if err != nil {
+		return err
 	}
-	log_err := cpuLog(fmt.Sprintf("inserted %v", res), args["logfile"])
-	if log_err != nil {
-		return log_err
+	err = cpuLog(fmt.Sprintf("inserted %v", res), args["logfile"])
+	if err != nil {
+		return err
 	}
 	err = client.Disconnect(context.TODO())
 	if err != nil {
@@ -245,11 +250,10 @@ func poll_cpu(logfile string) map[string]Usage {
 			for i := 1; i < numFields; i++ {
 				// these are the fields we consider idle
 				if i == 4 {
-					// if i == 4 || i == 5 {
 					val, err := strconv.Atoi(f[i])
 					check(err, logfile)
 					// we want to add these to idle AND total or the
-					// math dont work
+					// math wont work
 					idle += val
 					total += val
 				} else {
@@ -275,10 +279,10 @@ func poll_cpu(logfile string) map[string]Usage {
 func main() {
 	// for now we parse args in a sep func, it may make sense to do it
 	// down here in main eventually
-	args, parse_err := parseArgs()
+	args, err := parseArgs()
 	logfile := args["logfile"]
-	check(parse_err, logfile)
-	// we call getCPUSample because we want to build a header and have
+	check(err, logfile)
+	// we call poll_cpu because we want to build a header and have
 	// no idea how many cpus there are
 	usage0 := poll_cpu(logfile)
 	keys := make([]string, 0, len(usage0))
@@ -289,18 +293,10 @@ func main() {
 		keys = append(keys, k)
 		sort.Strings(keys)
 	}
-	// init some vars
-	var duration float64
-	var err error
-	var util string
-	var idle int
-	var total int
-	var data []string
-	// build the header
 	header := "utime," + strings.Join(keys[:], ",") + "\n"
 	// overwrite or append the csv accordingly, pass it the header
-	handle_err := handleFile(header, args)
-	check(handle_err, logfile)
+	err = handleFile(header, args)
+	check(err, logfile)
 	// we need to know how often to poll the file
 	refresh, err := strconv.Atoi(args["refresh"])
 	check(err, logfile)
@@ -321,17 +317,14 @@ func main() {
 			fmt.Printf("%7v", v)
 		}
 	}
-	var retry int
+	// var retry int
 	// main loop starts here
 	for i := time.Now(); time.Since(i) < time.Second*time.Duration(duration); {
-		// probably could have init these up top
-		var line string
 		var lines []string
-		var now string
-		// get the unix time
-		now = fmt.Sprintf("%v", time.Now().Unix())
+		var cpu_stats []float64
+		now = time.Now().Unix()
 		// unix time is our first field in each line
-		lines = append(lines, now)
+		lines = append(lines, fmt.Sprintf("%v", now))
 		// get our beginning poll
 		usage0 = poll_cpu(logfile)
 		// wait for the desired refresh time
@@ -343,38 +336,47 @@ func main() {
 			// this is how we calculate the usage
 			idle = usage1[k].idle - usage0[k].idle
 			total = usage1[k].total - usage0[k].total
-			util = fmt.Sprintf("%.2f", 100*(float64(total)-float64(idle))/float64(total))
+			util_str := fmt.Sprintf("%.2f", 100*(float64(total)-float64(idle))/float64(total))
 			// append to lines arrray
-			lines = append(lines, util)
+			lines = append(lines, util_str)
+			util, err = strconv.ParseFloat(util_str, 64)
+			// append to lines arrray
+			cpu_stats = append(cpu_stats, util)
 
 		}
-		// here we convert is into a string in csv flavor
-		line = strings.Join(lines[:], ",")
-		// line += "\n"
 		if args["silent"] == "false" {
-			// if they want to see usage during runtime, give them
-			// everything but the unixtime in the first position
-			data = lines[1:]
 			// this println gives us a newline cleanly-ish
 			fmt.Println()
-			for _, v := range data {
+			// if they want to see usage during runtime, give them
+			// everything but the unixtime in the first position
+			for _, v := range lines[1:] {
 				// we pad with seven since the stat cant be greater
 				// than 100.99 which has a length of 6
 				fmt.Printf("%7v", v)
 			}
 		}
-		// this tool in its current state ALWAYS creates a record
+		// if we're recording to a db
 		if args["db"] != "false" {
-			err := send2db(args, line)
+			// build our entry. now is unix time, cpu_stats is slice of
+			// unknown len
+			entry = Stat{
+				now,
+				cpu_stats,
+			}
+			// pass it to our db handler
+			err := send2db(args, entry)
+			// if theres an err, likely a connection issue
 			if err != nil {
+				// well wait thirty seconds before retrying and try 10
+				// times
 				if retry >= 10 {
 					exit_msg := "ran out of retries when connected to the DB, exiting..."
 					fmt.Println(exit_msg)
-					exit_err := cpuLog(exit_msg, logfile)
-					check(exit_err, logfile)
+					err = cpuLog(exit_msg, logfile)
+					check(err, logfile)
 					os.Exit(1)
 				}
-				err := cpuLog(err, logfile)
+				err = cpuLog(err, logfile)
 				check(err, logfile)
 				time.Sleep(30 * time.Second)
 				retry += 1
@@ -385,10 +387,12 @@ func main() {
 				continue
 			}
 			retry = 0
+			// otherwise we're writing to csv
 		} else {
+			line = strings.Join(lines, ",")
 			line += "\n"
-			write_err := writeFile(args, line)
-			check(write_err, logfile)
+			err = writeFile(args, line)
+			check(err, logfile)
 		}
 	}
 	// exit gracefully
