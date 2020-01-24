@@ -31,7 +31,6 @@ likewise probably want to be able to send this data over api
 
 type Stat struct {
 	Dev            string
-	Time           int64
 	Rsuccess       int
 	Rmerged        int
 	SectorRead     int
@@ -43,6 +42,11 @@ type Stat struct {
 	IOinProg       int
 	IOtime         int
 	WeightedTimeIO int
+}
+
+type Results struct {
+	Time  int64
+	Stats map[string]Stat
 }
 
 var (
@@ -63,6 +67,7 @@ var (
 )
 
 var entry Stat
+var disk_stats Results
 
 // this is the help message we output when -h is passed or a bad flag is given
 var help_msg string = `
@@ -211,7 +216,7 @@ func writeFile(args map[string]string, line string, filename string) error {
 	return nil
 }
 
-func send2db(args map[string]string, entry map[string]Stat) error {
+func send2db(args map[string]string, entry Results) error {
 	name, name_err := os.Hostname()
 	if name_err != nil {
 		return name_err
@@ -278,7 +283,6 @@ func poll_disks(logfile string) map[string]Stat {
 		check(err, logfile)
 		entry = Stat{
 			string(f[2]),
-			0.0,
 			Rsuccess,
 			Rmerged,
 			SectorRead,
@@ -376,7 +380,6 @@ func main() {
 			WeightedTimeIO = usage1[k].WeightedTimeIO - usage0[k].WeightedTimeIO
 			entry = Stat{
 				Dev,
-				time.Now().Unix(),
 				Rsuccess,
 				Rmerged,
 				SectorRead,
@@ -390,10 +393,14 @@ func main() {
 				WeightedTimeIO,
 			}
 			results[Dev] = entry
+			disk_stats = Results{
+				time.Now().Unix(),
+				results,
+			}
 		}
 		// this tool in its current state ALWAYS creates a record
 		if args["db"] != "false" {
-			err := send2db(args, results)
+			err := send2db(args, disk_stats)
 			if err != nil {
 				if retry >= 10 {
 					exit_msg := "ran out of retries when connected to the DB, exiting..."
@@ -418,7 +425,7 @@ func main() {
 				handle_err := handleFile(header, args, k)
 				check(handle_err, logfile)
 				line = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
-					v.Time, v.Rsuccess, v.Rmerged, v.SectorRead, v.Rtime, v.Wcomplete, v.Wmerged,
+					time.Now().Unix(), v.Rsuccess, v.Rmerged, v.SectorRead, v.Rtime, v.Wcomplete, v.Wmerged,
 					v.SectorWritten, v.Wtime, v.IOinProg, v.IOtime, v.WeightedTimeIO)
 				err := writeFile(args, line, k)
 				check(err, logfile)
