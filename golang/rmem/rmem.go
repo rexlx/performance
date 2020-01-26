@@ -36,6 +36,19 @@ optional arguments:
   -d          send output to database (monogodb is supported)
 `
 
+type Stat struct {
+	Time  int64
+	Stats map[string]int
+}
+
+var (
+	duration float64
+	err      error
+	_swap_   int
+	_used_   int
+	message  string
+)
+
 // here we pasre the users args, return the args in a map
 func parseArgs() (map[string]string, error) {
 	// init the arg map
@@ -60,7 +73,7 @@ func parseArgs() (map[string]string, error) {
 			continue
 		} else if a == "-h" {
 			fmt.Println(help_msg)
-            os.Exit(0)
+			os.Exit(0)
 		} else if a == "-s" {
 			argMap["silent"] = "true"
 		} else if a == "-a" {
@@ -242,7 +255,7 @@ func writeFile(args map[string]string, line string) error {
 	return nil
 }
 
-func getMem(args map[string]string, logfile string) (string, error) {
+func getMem(args map[string]string, logfile string) map[string]int {
 	memMap := make(map[string]int)
 	// memMap["el"] = 5
 	fh, err := os.Open("/proc/meminfo")
@@ -255,8 +268,12 @@ func getMem(args map[string]string, logfile string) (string, error) {
 		memMap[line[0]] = val * 1024
 	}
 	fh.Close()
-	_swap_ := memMap["SwapTotal:"] - memMap["SwapFree:"]
-	_used_ := memMap["MemTotal:"] - memMap["MemFree:"] - memMap["Buffers:"] - memMap["Cached:"] - memMap["Slab:"]
+	return memMap
+}
+
+/*
+	_swap_ = memMap["SwapTotal:"] - memMap["SwapFree:"]
+	_used_ = memMap["MemTotal:"] - memMap["MemFree:"] - memMap["Buffers:"] - memMap["Cached:"] - memMap["Slab:"]
 	if args["current"] == "true" {
 		if args["convert"] == "false" {
 			message := fmt.Sprintf("free: %v\nused: %v\nswap: %v\n", memMap["MemFree:"], _used_, _swap_)
@@ -274,13 +291,13 @@ func getMem(args map[string]string, logfile string) (string, error) {
 		}
 	}
 	if args["convert"] == "false" {
-		total := strconv.Itoa(memMap["MemTotal:"])
-		free := strconv.Itoa(memMap["MemFree:"])
-		buff := strconv.Itoa(memMap["Buffers:"])
-		cache := strconv.Itoa(memMap["Cached:"])
-		slab := strconv.Itoa(memMap["Slab:"])
-		used := strconv.Itoa(_used_)
-		swap := strconv.Itoa(_swap_)
+		total := memMap["MemTotal:"]
+		free := memMap["MemFree:"]
+		buff := memMap["Buffers:"]
+		cache := memMap["Cached:"]
+		slab := memMap["Slab:"]
+		used := _used_
+		swap := _swap_
 		message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v\n", time.Now().Unix(), total, free, buff, cache, slab, used, swap)
 		return message, nil
 	} else {
@@ -302,7 +319,7 @@ func getMem(args map[string]string, logfile string) (string, error) {
 		return message, nil
 	}
 }
-
+*/
 func metrics(quit chan bool, logfile string) {
 	for {
 		select {
@@ -318,30 +335,13 @@ func metrics(quit chan bool, logfile string) {
 	}
 }
 
-func send2db(args map[string]string, line string, logfile string) error {
-	type Stat struct {
-		Time  string
-		Total string
-		free  string
-		Buff  string
-		Cache string
-		Slab  string
-		Used  string
-		Swap  string
-	}
-	stats := strings.Split(line, ",")
+func send2db(args map[string]string, memMap map[string]int, logfile string) error {
 	entry := Stat{
-		stats[0],
-		stats[1],
-		stats[2],
-		stats[3],
-		stats[4],
-		stats[5],
-		stats[6],
-		stats[7],
+		time.Now().Unix(),
+		memMap,
 	}
-	name, name_err := os.Hostname()
-	check(name_err, logfile)
+	name, err := os.Hostname()
+	check(err, logfile)
 	clientOptions := options.Client().ApplyURI(args["db"])
 	// ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	// defer cancel()
@@ -352,13 +352,13 @@ func send2db(args map[string]string, line string, logfile string) error {
 		return err
 	}
 	collection := client.Database("mem_stats").Collection(name)
-	res, res_err := collection.InsertOne(context.TODO(), entry)
-	if res_err != nil {
-		return res_err
+	res, err := collection.InsertOne(context.TODO(), entry)
+	if err != nil {
+		return err
 	}
-	log_err := memLog(fmt.Sprintf("inserted %v", res), args["logfile"])
-	if log_err != nil {
-		return log_err
+	err = memLog(fmt.Sprintf("inserted %v", res), args["logfile"])
+	if err != nil {
+		return err
 	}
 	err = client.Disconnect(context.TODO())
 	if err != nil {
@@ -369,22 +369,34 @@ func send2db(args map[string]string, line string, logfile string) error {
 }
 
 func main() {
-	args, parse_err := parseArgs()
+	args, err := parseArgs()
 	logfile := args["logfile"]
-	check(parse_err, logfile)
+	check(err, logfile)
 	if args["current"] == "true" {
-		mem, err := getMem(args, logfile)
-		check(err, logfile)
-		fmt.Println(mem)
-		os.Exit(0)
+		memMap := getMem(args, logfile)
+		_swap_ = memMap["SwapTotal:"] - memMap["SwapFree:"]
+		_used_ = memMap["MemTotal:"] - memMap["MemFree:"] - memMap["Buffers:"] - memMap["Cached:"] - memMap["Slab:"]
+		if args["convert"] == "false" {
+			message := fmt.Sprintf("free: %v\nused: %v\nswap: %v\n", memMap["MemFree:"], _used_, _swap_)
+			fmt.Println(message)
+			os.Exit(0)
+		} else {
+			free, err := convertBytes(memMap["MemFree:"])
+			check(err, logfile)
+			used, err := convertBytes(_used_)
+			check(err, logfile)
+			swap, err := convertBytes(_swap_)
+			check(err, logfile)
+			message := fmt.Sprintf("free: %v\nused: %v\nswap: %v\n", free, used, swap)
+			fmt.Println(message)
+			os.Exit(0)
+		}
 	}
 	quit := make(chan bool)
 	go metrics(quit, logfile)
-	var duration float64
-	var err error
 	header := "utime,total,used,free,buff,cache,slab,swap\n"
-	handle_err := handleFile(header, args)
-	check(handle_err, logfile)
+	err = handleFile(header, args)
+	check(err, logfile)
 	refresh, err := strconv.Atoi(args["refresh"])
 	check(err, logfile)
 	if args["runtime"] == "inf" {
@@ -398,16 +410,16 @@ func main() {
 	}
 	var retry int
 	for i := time.Now(); time.Since(i) < time.Second*time.Duration(duration); {
-		mem, err := getMem(args, logfile)
+		memMap := getMem(args, logfile)
 		check(err, logfile)
 		if args["db"] != "false" {
-			err := send2db(args, mem, logfile)
+			err := send2db(args, memMap, logfile)
 			if err != nil {
 				if retry >= 10 {
 					exit_msg := "ran out of retries when connected to the DB, exiting..."
 					fmt.Println(exit_msg)
-					exit_err := memLog(exit_msg, args["logfile"])
-					check(exit_err, logfile)
+					err := memLog(exit_msg, args["logfile"])
+					check(err, logfile)
 					os.Exit(1)
 				}
 				err := memLog(err, logfile)
@@ -422,9 +434,38 @@ func main() {
 			}
 			retry = 0
 		} else {
-			mem += "\n"
-			write_err := writeFile(args, mem)
-			check(write_err, logfile)
+			if args["convert"] == "false" {
+				_swap_ = memMap["SwapTotal:"] - memMap["SwapFree:"]
+				_used_ = memMap["MemTotal:"] - memMap["MemFree:"] - memMap["Buffers:"] - memMap["Cached:"] - memMap["Slab:"]
+				total := memMap["MemTotal:"]
+				free := memMap["MemFree:"]
+				buff := memMap["Buffers:"]
+				cache := memMap["Cached:"]
+				slab := memMap["Slab:"]
+				used := _used_
+				swap := _swap_
+				message = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v\n", time.Now().Unix(), total, free, buff, cache, slab, used, swap)
+			} else {
+				total, err := convertBytes(memMap["MemTotal:"])
+				check(err, logfile)
+				free, err := convertBytes(memMap["MemFree:"])
+				check(err, logfile)
+				buff, err := convertBytes(memMap["Buffers:"])
+				check(err, logfile)
+				cache, err := convertBytes(memMap["Cached:"])
+				check(err, logfile)
+				slab, err := convertBytes(memMap["Slab:"])
+				check(err, logfile)
+				used, err := convertBytes(_used_)
+				check(err, logfile)
+				swap, err := convertBytes(_swap_)
+				check(err, logfile)
+				message = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v\n", time.Now().Unix(), total, free, buff, cache, slab, used, swap)
+			}
+
+			message += "\n"
+			err := writeFile(args, message)
+			check(err, logfile)
 		}
 		time.Sleep(time.Duration(refresh) * time.Second)
 	}
