@@ -404,7 +404,7 @@ func main() {
 			check(err, logfile)
 			swap, err := convertBytes(_swap_)
 			check(err, logfile)
-			message = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v\n", time.Now().Unix(), total, free, buff, cache, slab, used, swap)
+			message = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v\n", time.Now().Unix(), total, used, free, buff, cache, slab, swap)
 		}
 		if args["db"] != "false" {
 			err := send2db(args, memMap, free, logfile)
