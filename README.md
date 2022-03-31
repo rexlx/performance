@@ -1,9 +1,7 @@
 # performance
-A collection of performance gathering tools written in golang and python
+## NOTE, The python portion of this tool is no longer maintained and will be deprecated.
+A collection of performance gathering tools written in go and python
 
-You'll notice ive split this into two categories, python and golang.
-golang currently has limited support (only rcpu and rmem are ready), rnet will
-come next. The readme is split up into golng tools and then python tools.
 
 # Golang
 
@@ -12,7 +10,7 @@ come next. The readme is split up into golng tools and then python tools.
 collects cpu stats and can either write them to stdout while recording them to a csv or sending them to a mongodb instance.
 
 
-run without displaying to stdout refreshing every 5s forever
+run without displaying to stdout, storing data in a remote db.
 ```bash
 rcpu -r inf -R 5 -d "mongodb://192.168.1.42:9091" -s
 ```
