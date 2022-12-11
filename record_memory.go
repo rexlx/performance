@@ -34,6 +34,7 @@ type MemoryUsage struct {
 	Slab float64
 }
 
+// analyzeUsage does some basic maths to determine the usage.
 func (m *MemoryStats) analyzeUsage() *MemoryUsage {
 	return &MemoryUsage{
 		Time:   time.Now(),
@@ -45,19 +46,6 @@ func (m *MemoryStats) analyzeUsage() *MemoryUsage {
 		Cached: float64(m.Cached),
 		Slab:   float64(m.Slab),
 	}
-}
-
-func convertBytes(n float64) *HumanReadableBytes {
-	h := &HumanReadableBytes{}
-	for _, i := range []string{"KiB", "MiB", "GiB", "TiB"} {
-		if n < 1024 || i == "TiB" {
-			break
-		}
-		n /= 1024.0
-		h.Value = n
-		h.Symbol = i
-	}
-	return h
 }
 
 // GetMemoryUsage reads the system memory stats and calculates the usage
