@@ -1,9 +1,0 @@
-[Unit]
-Description=record cpu stats.
-
-[Service]
-Type=simple
-ExecStart=/home/usr/bin/rcpu -r inf -R 5 -s -d "mongodb://you_addr:6666" -l /home/usr/bin/logs/rcpu.log
-
-[Install]
-WantedBy=multi-user.target

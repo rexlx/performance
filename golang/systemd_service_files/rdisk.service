@@ -1,9 +1,0 @@
-[Unit]
-Description=record disk stats.
-
-[Service]
-Type=simple
-ExecStart=/home/usr/bin/rdisk -r inf -R 5 -d "mongodb://you_addr:6666" -l /home/usr/bin/logs/rdisk.log
-
-[Install]
-WantedBy=multi-user.target
