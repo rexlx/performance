@@ -20,9 +20,9 @@ type CpuValue struct {
 	Usage float64
 }
 
-// GetCpuValues reads the proc stat file, waits for the refresh
-// interval and returns the list of values
-func GetCpuValues(refresh int) []*CpuValue {
+// GetCpuValues
+func GetCpuValues(c chan []*CpuValue) {
+	var refresh int = 1
 	now := time.Now()
 	values := []*CpuValue{}
 	initialPoll, err := pollCpu()
@@ -47,12 +47,11 @@ func GetCpuValues(refresh int) []*CpuValue {
 			Usage: 100 * (float64(total) - float64(idle)) / float64(total),
 			Time:  now})
 	}
-	return values
+	c <- values
 }
 
 func pollCpu() (map[string]*Usage, error) {
 	usage := make(map[string]*Usage)
-	result := &Usage{}
 	contents, err := os.ReadFile("/proc/stat")
 	if err != nil {
 		return usage, err
@@ -65,6 +64,7 @@ func pollCpu() (map[string]*Usage, error) {
 			continue
 		}
 		if strings.Contains(fields[0], "cpu") {
+			result := &Usage{}
 			nFields := len(fields)
 			for i := 1; i < nFields; i++ {
 				if i == 4 {
