@@ -9,19 +9,20 @@ import (
 	"time"
 )
 
+// Usage type holds the raw data used to calculate the cpu utilization
 type Usage struct {
 	Total int
 	Idle  int
 }
 
+// CpuUsage type represents the utilization of a given cpu
 type CpuUsage struct {
 	Name  string
 	Time  time.Time
 	Usage float64
 }
 
-// GetCpuValues reads the proc stat file, waits for the refresh interval
-// and returns the list of cpu values
+// GetCpuValues polls the cpu statistics for a given interval in seconds
 func GetCpuValues(c chan []*CpuUsage, refresh int) {
 	if refresh < 1 {
 		log.Println("cant wait less than 1 second")
@@ -57,6 +58,7 @@ func GetCpuValues(c chan []*CpuUsage, refresh int) {
 	c <- values
 }
 
+// pollCpu reads and parses the /proc/stat file
 func pollCpu() (map[string]*Usage, error) {
 	usage := make(map[string]*Usage)
 	contents, err := os.ReadFile("/proc/stat")
