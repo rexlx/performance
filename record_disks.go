@@ -22,19 +22,16 @@ type DiskStat struct {
 	IOinProg,
 	IOtime,
 	WeightedTimeIO int
+	Time time.Time
 }
 
-type DiskUsage struct {
-	Time  time.Time
-	Stats []*DiskStat
-}
-
-func GetDiskUsage(c chan *DiskUsage, refresh int) {
+func GetDiskUsage(c chan []*DiskStat, refresh int) {
 	if refresh < 1 {
 		log.Println("cant wait less than 1 second")
 		refresh = 1
 	}
 
+	now := time.Now()
 	var keys []string
 	var diskStats []*DiskStat
 
@@ -48,8 +45,9 @@ func GetDiskUsage(c chan *DiskUsage, refresh int) {
 	usagePoll := pollDisks()
 
 	for _, k := range keys {
-		stat := &DiskStat{
+		diskStats = append(diskStats, &DiskStat{
 			Dev:            k,
+			Time:           now,
 			Rsuccess:       usagePoll[k].Rsuccess - initialPoll[k].Rsuccess,
 			Rmerged:        usagePoll[k].Rmerged - initialPoll[k].Rmerged,
 			SectorRead:     usagePoll[k].SectorRead - initialPoll[k].SectorRead,
@@ -61,14 +59,9 @@ func GetDiskUsage(c chan *DiskUsage, refresh int) {
 			IOinProg:       usagePoll[k].IOinProg - initialPoll[k].IOinProg,
 			IOtime:         usagePoll[k].IOinProg - initialPoll[k].IOinProg,
 			WeightedTimeIO: usagePoll[k].WeightedTimeIO - initialPoll[k].WeightedTimeIO,
-		}
-		diskStats = append(diskStats, stat)
+		})
 	}
-
-	c <- &DiskUsage{
-		Time:  time.Now(),
-		Stats: diskStats,
-	}
+	c <- diskStats
 }
 
 func pollDisks() map[string]DiskStat {

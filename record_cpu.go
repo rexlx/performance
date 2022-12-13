@@ -20,16 +20,22 @@ type CpuUsage struct {
 	Usage float64
 }
 
-func GetCpuValues(c chan []*CpuUsage) {
-	var refresh int = 1
+func GetCpuValues(c chan []*CpuUsage, refresh int) {
+	if refresh < 1 {
+		log.Println("cant wait less than 1 second")
+		refresh = 1
+	}
+
+	var keys []string
 	now := time.Now()
 	values := []*CpuUsage{}
+
 	initialPoll, err := pollCpu()
-	keys := make([]string, 0, len(initialPoll))
 	for k := range initialPoll {
 		keys = append(keys, k)
 		sort.Strings(keys)
 	}
+
 	if err != nil {
 		log.Println(err)
 	}
