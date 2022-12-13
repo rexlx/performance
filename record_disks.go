@@ -29,17 +29,24 @@ type DiskUsage struct {
 	Stats []*DiskStat
 }
 
-func GetDiskUsage(c chan *DiskUsage) {
+func GetDiskUsage(c chan *DiskUsage, refresh int) {
+	if refresh < 1 {
+		log.Println("cant wait less than 1 second")
+		refresh = 1
+	}
+
 	var keys []string
 	var diskStats []*DiskStat
-	var refresh int = 1
+
 	initialPoll := pollDisks()
 	for _, k := range initialPoll {
 		keys = append(keys, k.Dev)
 		sort.Strings(keys)
 	}
+
 	time.Sleep(time.Duration(refresh) * time.Second)
 	usagePoll := pollDisks()
+
 	for _, k := range keys {
 		stat := &DiskStat{
 			Dev:            k,
@@ -57,6 +64,7 @@ func GetDiskUsage(c chan *DiskUsage) {
 		}
 		diskStats = append(diskStats, stat)
 	}
+
 	c <- &DiskUsage{
 		Time:  time.Now(),
 		Stats: diskStats,

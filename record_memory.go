@@ -8,11 +8,6 @@ import (
 	"time"
 )
 
-type HumanReadableBytes struct {
-	Value  float64
-	Symbol string
-}
-
 type MemoryStats struct {
 	SwapTotal,
 	SwapFree,

@@ -14,17 +14,16 @@ type Usage struct {
 	Idle  int
 }
 
-type CpuValue struct {
+type CpuUsage struct {
 	Name  string
 	Time  time.Time
 	Usage float64
 }
 
-// GetCpuValues
-func GetCpuValues(c chan []*CpuValue) {
+func GetCpuValues(c chan []*CpuUsage) {
 	var refresh int = 1
 	now := time.Now()
-	values := []*CpuValue{}
+	values := []*CpuUsage{}
 	initialPoll, err := pollCpu()
 	keys := make([]string, 0, len(initialPoll))
 	for k := range initialPoll {
@@ -42,7 +41,7 @@ func GetCpuValues(c chan []*CpuValue) {
 	for _, key := range keys {
 		idle := poll[key].Idle - initialPoll[key].Idle
 		total := poll[key].Total - initialPoll[key].Total
-		values = append(values, &CpuValue{
+		values = append(values, &CpuUsage{
 			Name:  key,
 			Usage: 100 * (float64(total) - float64(idle)) / float64(total),
 			Time:  now})
