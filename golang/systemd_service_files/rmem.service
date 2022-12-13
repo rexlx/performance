@@ -1,9 +1,0 @@
-[Unit]
-Description=record memory stats.
-
-[Service]
-Type=simple
-ExecStart=/home/usr/bin/rmem -r inf -R 5 -d "mongodb://you_addr:6666" -l /home/usr/bin/logs/rmem.log
-
-[Install]
-WantedBy=multi-user.target
