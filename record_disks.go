@@ -1,4 +1,4 @@
-package main
+package performance
 
 import (
 	"log"
@@ -9,6 +9,24 @@ import (
 	"time"
 )
 
+// use named indexes instead of otherwise seemingly random integers
+const (
+	_ int = iota + 1
+	device
+	readSuccess
+	readMerged
+	sectorRead
+	readTime
+	writeComplete
+	writeMerged
+	sectorWritten
+	writeTime
+	ioInProg
+	ioTime
+	weightedTimeIo
+)
+
+// DiskStat type represents the utilization of a given partition
 type DiskStat struct {
 	Dev string
 	Rsuccess,
@@ -25,6 +43,7 @@ type DiskStat struct {
 	Time time.Time
 }
 
+// GetDiskUsage polls storage device statistics for a given interval in seconds
 func GetDiskUsage(c chan []*DiskStat, refresh int) {
 	if refresh < 1 {
 		log.Println("cant wait less than 1 second")
@@ -64,6 +83,7 @@ func GetDiskUsage(c chan []*DiskStat, refresh int) {
 	c <- diskStats
 }
 
+// pollDisks reads and parses the /proc/diskstats file
 func pollDisks() map[string]DiskStat {
 	usage := make(map[string]DiskStat)
 	contents, err := os.ReadFile("/proc/diskstats")
@@ -77,18 +97,18 @@ func pollDisks() map[string]DiskStat {
 			continue
 		}
 		stat := DiskStat{
-			Dev:            fields[2],
-			Rsuccess:       valueToInteger(fields[3]),
-			Rmerged:        valueToInteger(fields[4]),
-			SectorRead:     valueToInteger(fields[5]),
-			Rtime:          valueToInteger(fields[6]),
-			Wcomplete:      valueToInteger(fields[7]),
-			Wmerged:        valueToInteger(fields[8]),
-			SectorWritten:  valueToInteger(fields[9]),
-			Wtime:          valueToInteger(fields[10]),
-			IOinProg:       valueToInteger(fields[11]),
-			IOtime:         valueToInteger(fields[12]),
-			WeightedTimeIO: valueToInteger(fields[13]),
+			Dev:            fields[device],
+			Rsuccess:       valueToInteger(fields[readSuccess]),
+			Rmerged:        valueToInteger(fields[readMerged]),
+			SectorRead:     valueToInteger(fields[sectorRead]),
+			Rtime:          valueToInteger(fields[readTime]),
+			Wcomplete:      valueToInteger(fields[writeComplete]),
+			Wmerged:        valueToInteger(fields[writeMerged]),
+			SectorWritten:  valueToInteger(fields[sectorWritten]),
+			Wtime:          valueToInteger(fields[writeTime]),
+			IOinProg:       valueToInteger(fields[ioInProg]),
+			IOtime:         valueToInteger(fields[ioTime]),
+			WeightedTimeIO: valueToInteger(fields[weightedTimeIo]),
 		}
 		usage[fields[2]] = stat
 	}

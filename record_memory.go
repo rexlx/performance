@@ -1,4 +1,4 @@
-package main
+package performance
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// MemoryStats type holds raw data used to calculate usage
 type MemoryStats struct {
 	SwapTotal,
 	SwapFree,
@@ -18,6 +19,7 @@ type MemoryStats struct {
 	Slab int
 }
 
+// MemoryUsage type represents the memory util at a given time
 type MemoryUsage struct {
 	Time time.Time
 	Swap,
