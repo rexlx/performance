@@ -20,6 +20,8 @@ type CpuUsage struct {
 	Usage float64
 }
 
+// GetCpuValues reads the proc stat file, waits for the refresh interval
+// and returns the list of cpu values
 func GetCpuValues(c chan []*CpuUsage, refresh int) {
 	if refresh < 1 {
 		log.Println("cant wait less than 1 second")
