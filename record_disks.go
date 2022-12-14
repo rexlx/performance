@@ -76,7 +76,7 @@ func GetDiskUsage(c chan []*DiskStat, refresh int) {
 			SectorWritten:  usagePoll[k].SectorWritten - initialPoll[k].SectorWritten,
 			Wtime:          usagePoll[k].Wtime - initialPoll[k].Wtime,
 			IOinProg:       usagePoll[k].IOinProg - initialPoll[k].IOinProg,
-			IOtime:         usagePoll[k].IOinProg - initialPoll[k].IOinProg,
+			IOtime:         usagePoll[k].IOtime - initialPoll[k].IOtime,
 			WeightedTimeIO: usagePoll[k].WeightedTimeIO - initialPoll[k].WeightedTimeIO,
 		})
 	}
