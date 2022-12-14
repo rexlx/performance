@@ -119,6 +119,7 @@ func valueToInteger(s string) int {
 	out, err := strconv.Atoi(s)
 	if err != nil {
 		log.Println(err)
+		return 0
 	}
 	return out
 }
