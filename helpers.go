@@ -1,6 +1,10 @@
 package performance
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"strconv"
+)
 
 const (
 	_ = 1 << (iota * 10)
@@ -9,6 +13,15 @@ const (
 	GiB
 	TiB
 )
+
+func ValueToInteger(s string) int {
+	out, err := strconv.Atoi(s)
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+	return out
+}
 
 func ByteConverter(n int) string {
 	switch {

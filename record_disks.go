@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -98,28 +97,19 @@ func pollDisks() map[string]DiskStat {
 		}
 		stat := DiskStat{
 			Dev:            fields[device],
-			Rsuccess:       valueToInteger(fields[readSuccess]),
-			Rmerged:        valueToInteger(fields[readMerged]),
-			SectorRead:     valueToInteger(fields[sectorRead]),
-			Rtime:          valueToInteger(fields[readTime]),
-			Wcomplete:      valueToInteger(fields[writeComplete]),
-			Wmerged:        valueToInteger(fields[writeMerged]),
-			SectorWritten:  valueToInteger(fields[sectorWritten]),
-			Wtime:          valueToInteger(fields[writeTime]),
-			IOinProg:       valueToInteger(fields[ioInProg]),
-			IOtime:         valueToInteger(fields[ioTime]),
-			WeightedTimeIO: valueToInteger(fields[weightedTimeIo]),
+			Rsuccess:       ValueToInteger(fields[readSuccess]),
+			Rmerged:        ValueToInteger(fields[readMerged]),
+			SectorRead:     ValueToInteger(fields[sectorRead]),
+			Rtime:          ValueToInteger(fields[readTime]),
+			Wcomplete:      ValueToInteger(fields[writeComplete]),
+			Wmerged:        ValueToInteger(fields[writeMerged]),
+			SectorWritten:  ValueToInteger(fields[sectorWritten]),
+			Wtime:          ValueToInteger(fields[writeTime]),
+			IOinProg:       ValueToInteger(fields[ioInProg]),
+			IOtime:         ValueToInteger(fields[ioTime]),
+			WeightedTimeIO: ValueToInteger(fields[weightedTimeIo]),
 		}
 		usage[fields[2]] = stat
 	}
 	return usage
-}
-
-func valueToInteger(s string) int {
-	out, err := strconv.Atoi(s)
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-	return out
 }
