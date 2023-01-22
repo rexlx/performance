@@ -17,9 +17,9 @@ type Usage struct {
 
 // CpuUsage type represents the utilization of a given cpu
 type CpuUsage struct {
-	Name  string
-	Time  time.Time
-	Usage float64
+	Name  string    `json:"name"`
+	Time  time.Time `json:"time"`
+	Usage float64   `json:"percent_used"`
 }
 
 // GetCpuValues polls the cpu statistics for a given interval in seconds

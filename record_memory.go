@@ -21,14 +21,14 @@ type MemoryStats struct {
 
 // MemoryUsage type represents the memory util at a given time
 type MemoryUsage struct {
-	Time time.Time
-	Swap,
-	Used,
-	Total,
-	Free,
-	Buff,
-	Cached,
-	Slab float64
+	Time   time.Time `json:"time"`
+	Swap   float64   `json:"swap_used"`
+	Used   float64   `json:"percent_used"`
+	Total  float64   `json:"total_memory"`
+	Free   float64   `json:"free"`
+	Buff   float64   `json:"buffered"`
+	Cached float64   `json:"cached"`
+	Slab   float64   `json:"slab"`
 }
 
 // analyzeUsage does some basic maths to determine the usage.

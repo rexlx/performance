@@ -27,19 +27,19 @@ const (
 
 // DiskStat type represents the utilization of a given partition
 type DiskStat struct {
-	Dev string
-	Rsuccess,
-	Rmerged,
-	SectorRead,
-	Rtime,
-	Wcomplete,
-	Wmerged,
-	SectorWritten,
-	Wtime,
-	IOinProg,
-	IOtime,
-	WeightedTimeIO int
-	Time time.Time
+	Dev            string    `json:"device"`
+	Rsuccess       int       `json:"read_success"`
+	Rmerged        int       `json:"read_merged"`
+	SectorRead     int       `json:"sector_read"`
+	Rtime          int       `json:"time_reading"`
+	Wcomplete      int       `json:"write_complete"`
+	Wmerged        int       `json:"write_merged"`
+	SectorWritten  int       `json:"sector_written"`
+	Wtime          int       `json:"time_writing"`
+	IOinProg       int       `json:"current_io"`
+	IOtime         int       `json:"time_io"`
+	WeightedTimeIO int       `json:"weighted_time_io"`
+	Time           time.Time `json:"time"`
 }
 
 // GetDiskUsage polls storage device statistics for a given interval in seconds
