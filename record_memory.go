@@ -8,6 +8,16 @@ import (
 	"time"
 )
 
+const (
+	SwapTotal = iota
+	SwapFree
+	MemTotal
+	MemFree
+	Buffers
+	Cached
+	Slab
+)
+
 // MemoryStats type holds raw data used to calculate usage
 type MemoryStats struct {
 	SwapTotal,
@@ -54,15 +64,22 @@ func GetMemoryUsage() *MemoryUsage {
 	lines := strings.Split(string(contents), "\n")
 	stats := generateMemoryMap(lines)
 	memStats := &MemoryStats{
-		Buffers:   stats["Buffers"],
-		Cached:    stats["Cached"],
-		MemTotal:  stats["MemTotal"],
-		MemFree:   stats["MemFree"],
-		SwapTotal: stats["SwapTotal"],
-		SwapFree:  stats["SwapFree"],
-		Slab:      stats["Slab"],
+		Buffers:   GetKeyOrNone("Buffers", stats),
+		Cached:    GetKeyOrNone("Cached", stats),
+		MemTotal:  GetKeyOrNone("MemTotal", stats),
+		MemFree:   GetKeyOrNone("MemFree", stats),
+		SwapTotal: GetKeyOrNone("SwapTotal", stats),
+		SwapFree:  GetKeyOrNone("SwapFree", stats),
+		Slab:      GetKeyOrNone("Slab", stats),
 	}
 	return memStats.analyzeUsage()
+}
+
+func GetKeyOrNone(key string, m map[string]int) int {
+	if val, ok := m[key]; ok {
+		return val
+	}
+	return 0
 }
 
 func generateMemoryMap(lines []string) map[string]int {
