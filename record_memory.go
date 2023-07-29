@@ -55,6 +55,10 @@ func (m *MemoryStats) analyzeUsage() *MemoryUsage {
 	}
 }
 
+func (m *MemoryUsage) String() string {
+	return fmt.Sprintf(memoryUsageTemplate, m.Time, m.Used, m.Swap, m.Total, m.Free, m.Cached)
+}
+
 // GetMemoryUsage reads the system memory stats and calculates the usage
 func GetMemoryUsage() *MemoryUsage {
 	contents, err := os.ReadFile("/proc/meminfo")
@@ -97,3 +101,11 @@ func generateMemoryMap(lines []string) map[string]int {
 	}
 	return memoryMap
 }
+
+// define a template for the output. we need to pad for the floats
+const memoryUsageTemplate = `Memory Usage
+=====================
+Time: %v
+=====================
+Used: %v Swap: %v Total: %v Free: %v Cached: %v
+`
