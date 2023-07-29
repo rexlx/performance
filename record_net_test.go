@@ -7,9 +7,9 @@ import (
 
 func TestGetNetValues(t *testing.T) {
 	c := make(chan NetUsage)
-	go GetNetValues(c, 5)
+	go GetNetValues(c, 10)
 	msg := <-c
 	for _, i := range msg.Ifaces {
-		fmt.Println(i.Name, *i.Rx, *i.Tx)
+		fmt.Println(i.String())
 	}
 }
