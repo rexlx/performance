@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -55,6 +54,22 @@ type Iface struct {
 	Name string
 	Rx   *RxData
 	Tx   *TxData
+}
+
+func (i *Iface) BytesTransmittedToHumanReadable() string {
+	return ByteConverter(i.Tx.Bytes)
+}
+
+func (i *Iface) BytesReceivedToHumanReadable() string {
+	return ByteConverter(i.Rx.Bytes)
+}
+
+func (i *Iface) TotalBytesToHumanReadable() string {
+	return ByteConverter(i.Tx.Bytes + i.Rx.Bytes)
+}
+
+func (i *Iface) String() string {
+	return fmt.Sprintf("Name: %s\tRx: %+v Tx: %+v (total) %v", i.Name, i.BytesReceivedToHumanReadable(), i.BytesTransmittedToHumanReadable(), i.TotalBytesToHumanReadable())
 }
 
 // NetUsage type represents the utilization of a given network interface
@@ -145,38 +160,27 @@ func PollNetworkStatistics() (ifaces map[string]*Iface, err error) {
 		iface := &Iface{
 			Name: name,
 			Rx: &RxData{
-				Bytes:      parseInt(stats[rxBytes]),
-				Packets:    parseInt(stats[rxPackets]),
-				Errs:       parseInt(stats[rxErrs]),
-				Drop:       parseInt(stats[rxDrop]),
-				Fifo:       parseInt(stats[rxFifo]),
-				Frame:      parseInt(stats[rxFrame]),
-				Compressed: parseInt(stats[rxCompressed]),
-				Multicast:  parseInt(stats[rxMulticast]),
+				Bytes:      ValueToInteger(stats[rxBytes]),
+				Packets:    ValueToInteger(stats[rxPackets]),
+				Errs:       ValueToInteger(stats[rxErrs]),
+				Drop:       ValueToInteger(stats[rxDrop]),
+				Fifo:       ValueToInteger(stats[rxFifo]),
+				Frame:      ValueToInteger(stats[rxFrame]),
+				Compressed: ValueToInteger(stats[rxCompressed]),
+				Multicast:  ValueToInteger(stats[rxMulticast]),
 			},
 			Tx: &TxData{
-				Bytes:      parseInt(stats[txBytes]),
-				Packets:    parseInt(stats[txPackets]),
-				Errs:       parseInt(stats[txErrs]),
-				Drop:       parseInt(stats[txDrop]),
-				Fifo:       parseInt(stats[txFifo]),
-				Colls:      parseInt(stats[txColls]),
-				Carrier:    parseInt(stats[txCarrier]),
-				Compressed: parseInt(stats[txCompressed]),
+				Bytes:      ValueToInteger(stats[txBytes]),
+				Packets:    ValueToInteger(stats[txPackets]),
+				Errs:       ValueToInteger(stats[txErrs]),
+				Drop:       ValueToInteger(stats[txDrop]),
+				Fifo:       ValueToInteger(stats[txFifo]),
+				Colls:      ValueToInteger(stats[txColls]),
+				Carrier:    ValueToInteger(stats[txCarrier]),
+				Compressed: ValueToInteger(stats[txCompressed]),
 			},
 		}
 		out[name] = iface
 	}
 	return out, nil
-}
-
-func parseInt(s string) int {
-	var i int
-	out, err := strconv.Atoi(s)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	i = out
-	return i
 }
