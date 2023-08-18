@@ -32,31 +32,38 @@ type MemoryStats struct {
 // MemoryUsage type represents the memory util at a given time
 type MemoryUsage struct {
 	Time   time.Time `json:"time"`
-	Swap   float64   `json:"swap_used"`
-	Used   float64   `json:"percent_used"`
-	Total  float64   `json:"total_memory"`
-	Free   float64   `json:"free"`
-	Buff   float64   `json:"buffered"`
-	Cached float64   `json:"cached"`
-	Slab   float64   `json:"slab"`
+	Swap   int       `json:"swap_used"`
+	Used   int       `json:"percent_used"`
+	Total  int       `json:"total_memory"`
+	Free   int       `json:"free"`
+	Buff   int       `json:"buffered"`
+	Cached int       `json:"cached"`
+	Slab   int       `json:"slab"`
 }
 
 // analyzeUsage does some basic maths to determine the usage.
 func (m *MemoryStats) analyzeUsage() *MemoryUsage {
 	return &MemoryUsage{
 		Time:   time.Now(),
-		Swap:   float64(m.SwapTotal) - float64(m.SwapFree),
-		Used:   float64(m.MemTotal) - float64(m.MemFree) - float64(m.Buffers) - float64(m.Cached) - float64(m.Slab),
-		Free:   float64(m.MemFree),
-		Total:  float64(m.MemTotal),
-		Buff:   float64(m.Buffers),
-		Cached: float64(m.Cached),
-		Slab:   float64(m.Slab),
+		Swap:   m.SwapTotal - m.SwapFree,
+		Used:   m.MemTotal - m.MemFree - m.Buffers - m.Cached - m.Slab,
+		Free:   m.MemFree,
+		Total:  m.MemTotal,
+		Buff:   m.Buffers,
+		Cached: m.Cached,
+		Slab:   m.Slab,
 	}
 }
 
 func (m *MemoryUsage) String() string {
-	return fmt.Sprintf(memoryUsageTemplate, m.Time, m.Used, m.Swap, m.Total, m.Free, m.Cached)
+	return fmt.Sprintf(
+		memoryUsageTemplate,
+		m.Time,
+		Bytes(m.Used),
+		Bytes(m.Swap),
+		Bytes(m.Total),
+		Bytes(m.Free),
+		Bytes(m.Cached))
 }
 
 // GetMemoryUsage reads the system memory stats and calculates the usage
@@ -107,5 +114,15 @@ const memoryUsageTemplate = `Memory Usage
 =====================
 Time: %v
 =====================
-Used: %v Swap: %v Total: %v Free: %v Cached: %v
+Used: %s Swap: %s Total: %s Free: %s Cached: %s
 `
+
+func Bytes(bytes int) string {
+	units := []string{"bytes", "KiB", "MiB", "GiB", "TiB"}
+	for i := 0; i < len(units)-1; i++ {
+		if bytes < 1024<<uint(i+1) {
+			return fmt.Sprintf("%.2f%s", float64(bytes)/1024.0, units[i])
+		}
+	}
+	return fmt.Sprintf("%.2f%s", float64(bytes), units[len(units)-1])
+}
