@@ -117,12 +117,15 @@ Time: %v
 Used: %s Swap: %s Total: %s Free: %s Cached: %s
 `
 
-func Bytes(bytes int) string {
-	units := []string{"bytes", "KiB", "MiB", "GiB", "TiB"}
-	for i := 0; i < len(units)-1; i++ {
-		if bytes < 1024<<uint(i+1) {
-			return fmt.Sprintf("%.2f%s", float64(bytes)/1024.0, units[i])
-		}
+func Bytes(b int) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
 	}
-	return fmt.Sprintf("%.2f%s", float64(bytes), units[len(units)-1])
+	div, exp := unit, 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
 }
