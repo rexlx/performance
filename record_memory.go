@@ -107,5 +107,5 @@ const memoryUsageTemplate = `Memory Usage
 =====================
 Time: %v
 =====================
-Used: %v Swap: %v Total: %v Free: %v Cached: %v
+Used: %f Swap: %f Total: %f Free: %f Cached: %f
 `
