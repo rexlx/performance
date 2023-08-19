@@ -59,11 +59,11 @@ func (m *MemoryUsage) String() string {
 	return fmt.Sprintf(
 		memoryUsageTemplate,
 		m.Time,
-		Bytes(m.Used),
-		Bytes(m.Swap),
-		Bytes(m.Total),
-		Bytes(m.Free),
-		Bytes(m.Cached))
+		Bytes(m.Used*1024),
+		Bytes(m.Swap*1024),
+		Bytes(m.Total*1024),
+		Bytes(m.Free*1024),
+		Bytes(m.Cached*1024))
 }
 
 // GetMemoryUsage reads the system memory stats and calculates the usage
