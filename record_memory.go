@@ -116,8 +116,8 @@ func PrintMemoryUsage() {
 
 // define a template for the output. we need to pad for the floats
 const memoryUsageTemplate = `Memory Usage
-=====================
+===========================================================
 Time: %v
-=====================
+===========================================================
 Used: %s Swap: %s Total: %s Free: %s Cached: %s
 `

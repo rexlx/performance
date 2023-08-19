@@ -8,6 +8,6 @@ func TestMemory(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	t.Log(Bytes(KiB * 6186))
-	t.Log(ByteConverter(KiB * 6669))
+	t.Log(Bytes(6177786666))
+	t.Log(ByteConverter(KiB * 6177786))
 }
