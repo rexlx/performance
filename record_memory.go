@@ -109,6 +109,11 @@ func generateMemoryMap(lines []string) map[string]int {
 	return memoryMap
 }
 
+func PrintMemoryUsage() {
+	x := GetMemoryUsage()
+	fmt.Print(x.String())
+}
+
 // define a template for the output. we need to pad for the floats
 const memoryUsageTemplate = `Memory Usage
 =====================
