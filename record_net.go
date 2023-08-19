@@ -57,15 +57,15 @@ type Iface struct {
 }
 
 func (i *Iface) BytesTransmittedToHumanReadable() string {
-	return ByteConverter(i.Tx.Bytes)
+	return Bytes(i.Tx.Bytes)
 }
 
 func (i *Iface) BytesReceivedToHumanReadable() string {
-	return ByteConverter(i.Rx.Bytes)
+	return Bytes(i.Rx.Bytes)
 }
 
 func (i *Iface) TotalBytesToHumanReadable() string {
-	return ByteConverter(i.Tx.Bytes + i.Rx.Bytes)
+	return Bytes(i.Tx.Bytes + i.Rx.Bytes)
 }
 
 func (i *Iface) String() string {

@@ -37,3 +37,16 @@ func ByteConverter(n int) string {
 		return fmt.Sprintf("%.2f   B", float64(n))
 	}
 }
+
+func Bytes(b int) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := unit, 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
+}
